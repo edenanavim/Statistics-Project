@@ -1,0 +1,161 @@
+# Read libraries:
+```{r, echo=F, message=F}
+library(readxl)
+library(dplyr)
+#library(rio)
+library(ggplot2)
+library(tidyr)
+options(scipen=5, digits = 5)
+```
+
+
+# Read the df file:
+```{r}
+dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Workshop/atopic_comorbidities_first_second_year_1.11.22.xlsx"
+df <- read_excel(dir, sheet = 1)
+df <- df %>% mutate(DOB = as.Date(DOB)) 
+
+## df arrangement:
+# not relevant columns :
+not_relevant <- c('allergist_followup', 'last_spt', 'epipen', 'mistake_exposure', 'reaction_type24', 'diagnosis_by')
+df <- df[-which(colnames(df) %in% not_relevant)]
+
+# Filter only participants that complete the survey
+df <- df %>% filter(month_survey_complete == 2)
+
+
+# add binary columns 
+df$family_Atopic_diseases_sum <- rowSums(df[,15:50])
+df$mother_Atopic_diseases_sum <- rowSums(df[,15:20])
+df$father_Atopic_diseases_sum <- rowSums(df[,21:26])
+df$sibling_Atopic_diseases_sum <- rowSums(df[,27:50])
+df <- df %>% mutate(family_Atopic_diseases = ifelse(family_Atopic_diseases_sum >0,1,0), 
+                    mother_Atopic_diseases = ifelse(mother_Atopic_diseases_sum>0,1,0), 
+                    father_Atopic_diseases = ifelse(father_Atopic_diseases_sum > 0, 1,0), 
+                    sibling_Atopic_diseases = ifelse(sibling_Atopic_diseases_sum > 0 ,1, 0)) %>% select(-c(family_Atopic_diseases_sum, mother_Atopic_diseases_sum, father_Atopic_diseases_sum, sibling_Atopic_diseases_sum))
+```
+
+
+# Deling with strange data:  
+```{r}
+summary(df)
+glimpse(df)
+# attach(df)
+
+# מישהי שילדה בגיל 12
+df[which(df$mother_year_birth> 2000),] # to take off ?? 
+
+# Change the binary variables to 0/1
+df$gender[df$gender == 2] <- 0
+df$food_allergy_24_month[df$food_allergy_24_month == 2] <- 0
+df$inhalation_24_month[df$inhalation_24_month == 2] <- 0
+df$prevention_therapy[df$prevention_therapy == 2] <- 0
+df$AD_24_month[df$AD_24_month == 2] <- 0
+df$steroids_treatment24[df$steroids_treatment24 == 2] <- 0
+df$ABX_treatment_24_months[df$ABX_treatment_24_months == 2] <- 0
+df$hospitalization_24_months[df$hospitalization_24_months == 2] <- 0
+df$chronic_disease_24[df$chronic_disease_24 == 2] <- 0
+
+df$`12_month_number_of_inhalations`[is.na(df$`12_month_number_of_inhalations`)] <- 0
+df$`12_month_FA_type_allergy`[is.na(df$`12_month_FA_type_allergy`)] <- 0
+df$number_of_ABX_first_year[is.na(df$number_of_ABX_first_year)] <- 0
+df$number_inhalation[is.na(df$number_inhalation)] <- 0
+df$prevention_therapy[is.na(df$prevention_therapy)] <- 0
+df$number_of_ABX_first_year[is.na(df$number_of_ABX_first_year)] <- 0
+df$number_steroid_treat[is.na(df$number_steroid_treat)] <- 0
+df$number_ABX_treatment_24_months[is.na(df$number_ABX_treatment_24_months)] <- 0
+```
+
+
+# Summary of the data:
+```{r}
+attach(df)
+
+# Check the freq of each category 
+table(`Jew/Arab`)
+table(gender)
+table(`Study group (MARCH 2020)`) # 0=Before march 2020, 1=After
+table(study_group_COMEET) # 1= only breastfeeding, 2=breastfeeding and CMF, 3=only CMF 
+table(mother_education) # 1=high school, 2=post graduate, 3=Academic
+table(number_of_children)
+table(preganancy_number)
+table(type_of_pregnancy) #1=spontaneous, 2=IVF
+table(`mode of delivery`) #1=Vaginal, 2=Elelctive cessarian section, 3=Emergency cessarian section
+table(`type of allergy`) # number of allergy 
+table(inhalation_24_month)
+table(inhalation_24_month)
+
+#type of food:
+table(Egg)
+table(Peanuts)
+table(Almonds)
+table(`Tree nuts`)
+table(Milk)
+table(Soy)
+table(Sesame)
+table(Fish)
+table(`Other food`)
+table(HRAD_first_year)
+table(AD_first_year)
+
+# Show the distribution of some variables
+hist(mother_year_birth)
+
+
+hist(SES) #socio-economic status
+
+colnames(df)
+
+```
+# Frequency table for each column
+```{r}
+tablelist <- mapply(table, df)
+tablelist
+```
+# How many NA are in each column
+```{r}
+NA_count <- as.data.frame(t(df %>% summarise_all(funs(sum(is.na(.)))))) %>% dplyr::rename("the NA number" = 1)
+NA_count
+```
+# Run some logistic regression on some variables:
+```{r}
+# # split the data into train and test 
+# set.seed(1)
+# sample <- sample(c(TRUE, FALSE), nrow(df), replace=TRUE, prob=c(0.7,0.3))
+# train <- df[sample, ]
+# test <- df[!sample, ]  
+
+
+# Finding the most relevant variables to use in the model 
+intresting_col <- df %>% select(SES, `Jew/Arab`, gender, `Study group (MARCH 2020)`, study_group_COMEET, mother_education, number_of_children, preganancy_number, type_of_pregnancy, `mode of delivery`, `type of allergy`, Milk, Egg, Soy, Peanuts, Sesame, Almonds, `Tree nuts`, `Other food`, `12_month_number_of_inhalations`, `12_month_FA_type_allergy`, HRAD_first_year, AD_first_year, FA_first_year, ABX_fisrt_year, number_of_ABX_first_year, vaccine_12mo, nursing_setup_at_12mo, daycare_24month, vaccines_24month, food_allergy_24_month, inhalation_24_month, number_inhalation, prevention_therapy, AD_24_month, AD_treatment_24_month, steroids_treatment24, number_steroid_treat, chronic_rhinitis_24_month, number_ABX_treatment_24_months, hospitalization_24_months, chronic_disease_24, month_survey_complete, family_Atopic_diseases, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases)
+
+
+cor_df <- as.data.frame(cor(as.matrix.noquote(intresting_col), use = "pairwise.complete.obs"))
+
+# model of inhalation requirement with the relevant fields 
+mdl <- glm(`type of allergy`~ ., data = intresting_col)
+summary(mdl)
+```
+
+```{r}
+cor(intresting_col, use="complete.obs")
+```
+
+
+```{r}
+ggplot(gather(intresting_col[,1:12]) %>% na.omit() , aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+
+ggplot(gather(intresting_col[,13:24]) %>% na.omit() , aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+
+ggplot(gather(intresting_col[,25:36]) %>% na.omit() , aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+
+ggplot(gather(intresting_col[,37:47]) %>% na.omit() , aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+```
