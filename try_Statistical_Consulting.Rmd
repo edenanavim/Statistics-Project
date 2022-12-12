@@ -11,8 +11,8 @@ options(scipen=5, digits = 5)
 
 ```{r}
 # Reading the file:
-dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
-#dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
+#dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
 #dir<- 
     
 df <- read_excel(dir, sheet = 1)
@@ -62,6 +62,19 @@ df$hospitalization_24_months[df$hospitalization_24_months == 2] <- 0
 df$chronic_disease_24[df$chronic_disease_24 == 2] <- 0
 ```
 
+Creating explanatory variables:
+```{r}
+df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year + ABX_fisrt_year)>0,1,0), is_atopic_second_year = ifelse((food_allergy_24_month + inhalation_24_month + AD_24_month)>0,1,0))
+```
+The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
+```{r}
+covid_start_date <- as.Date("2020-01-30")
+covid_mid_date <- as.Date("2020-07-30")
+df <- df %>% mutate(covid_time = ifelse(DOB < covid_start_date,1,ifelse(DOB < covid_mid_date, 2,3)))
+df[,c("DOB","covid_time")]
+table(df$covid_time)
+```
+
 ```{r}
 # Taking a first view at data: 
 summary(df)
@@ -75,7 +88,7 @@ df[which(df$mother_year_birth> 2000),] # to take off ??
 
 # Summary of the data:
 ```{r}
-#attach(df) ##מה זה?
+attach(df) ##מה זה? -- יוצר משתנה עבור כל עמודה בפנה עצמה סלי קשר לדאטה
 
 # Show the distribution of some variables
 hist(mother_year_birth)
@@ -84,8 +97,8 @@ hist(SES) #socio-economic status
 
 ```{r}
 # Frequency table for each column
-#tablelist <- mapply(table, df)
-#tablelist
+tablelist <- mapply(table, df)
+tablelist
 ```
 
 ```{r}
@@ -95,9 +108,78 @@ NA_count <- NA_count %>% mutate(Name = rownames(NA_count))
 NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 ```
 
-```{r}
-df$month_F
+# two dimention tables:
 
+covid time:
+```{r}
+print("SES")
+table(df$covid_time,df$SES)
+print("gender")
+table(df$covid_time,df$gender)
+print("mother_education")
+table(df$covid_time,df$mother_education)
+print("preganancy_number")
+table(df$covid_time,df$preganancy_number)
+print("type_of_pregnancy")
+table(df$covid_time,df$type_of_pregnancy)
+print("mode of delivery")
+table(df$covid_time,df$`mode of delivery`)
+print("mother_Atopic_diseases")
+table(df$covid_time,df$mother_Atopic_diseases)
+print("father_Atopic_diseases")
+table(df$covid_time,df$father_Atopic_diseases)
+print("sibling_Atopic_diseases")
+table(df$covid_time,df$sibling_Atopic_diseases)
+print("vaccine_12mo")
+table(df$covid_time,df$vaccine_12mo)
+print("nursing_setup_at_12mo")
+table(df$covid_time,df$nursing_setup_at_12mo)
+print("daycare_24month")
+table(df$covid_time,df$daycare_24month)
+print("vaccines_24month")
+table(df$covid_time,df$vaccines_24month)
+
+
+
+
+
+
+print("HRAD_first_year")
+table(df$covid_time,df$HRAD_first_year)
+print("AD_first_year")
+table(df$covid_time,df$AD_first_year)
+print("FA_first_year")
+table(df$covid_time,df$FA_first_year)
+print("ABX_fisrt_year")
+table(df$covid_time,df$ABX_fisrt_year)
+print("is_atopic_first_year")
+table(df$covid_time,df$is_atopic_first_year)
+
+print("food_allergy_24_month")
+table(df$covid_time,df$food_allergy_24_month)
+print("inhalation_24_month")
+table(df$covid_time,df$inhalation_24_month)
+print("AD_24_month")
+table(df$covid_time,df$AD_24_month)
+print("chronic_rhinitis_24_month")
+table(df$covid_time,df$chronic_rhinitis_24_month)
+print("hospitalization_24_months")
+table(df$covid_time,df$hospitalization_24_months)
+print("chronic_disease_24")
+table(df$covid_time,df$chronic_disease_24)
+print("AD_24_month")
+table(df$covid_time,df$AD_24_month)
+print("chronic_rhinitis_24_month")
+table(df$covid_time,df$chronic_rhinitis_24_month)
+print("is_atopic_second_year")
+table(df$covid_time,df$is_atopic_second_year)
+
+```
+
+
+```{r}
+#df$month_F
+colnames(df)[49:83]
 ```
 
 
@@ -127,6 +209,7 @@ summary(mdl)
 ```{r}
 cor(intresting_col, use="complete.obs")
 ```
+
 ```{r}
 ggplot(gather(intresting_col[,1:12]) %>% na.omit() , aes(value)) + 
     geom_histogram(bins = 10) + 
