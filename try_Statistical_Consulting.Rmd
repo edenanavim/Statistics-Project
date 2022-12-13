@@ -11,8 +11,8 @@ options(scipen=5, digits = 5)
 
 ```{r}
 # Reading the file:
-#dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
+dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
+#dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
 #dir<- 
     
 df <- read_excel(dir, sheet = 1)
@@ -60,20 +60,38 @@ df$steroids_treatment24[df$steroids_treatment24 == 2] <- 0
 df$ABX_treatment_24_months[df$ABX_treatment_24_months == 2] <- 0
 df$hospitalization_24_months[df$hospitalization_24_months == 2] <- 0
 df$chronic_disease_24[df$chronic_disease_24 == 2] <- 0
+
+#Changing NA to 0 for 
+df$number_ABX_treatment_24_months<- replace(df$number_ABX_treatment_24_months, is.na(df$number_ABX_treatment_24_months), 0)
+df$hospitalization_24_months<- replace(df$hospitalization_24_months, is.na(df$hospitalization_24_months), 0)
+
+df$prevention_therapy<- replace(df$prevention_therapy, is.na(df$prevention_therapy), 0)
+df$number_inhalation<- replace(df$number_inhalation, is.na(df$number_inhalation), 0)
+
+df$AD_treatment_24_month<- replace(df$AD_treatment_24_month, is.na(df$AD_treatment_24_month), 0)
+df$steroids_treatment24<- replace(df$steroids_treatment24, is.na(df$steroids_treatment24), 0)
+df$number_steroid_treat<- replace(df$number_steroid_treat
+, is.na(df$number_steroid_treat), 0)
+
+df$number_of_ABX_first_year<- replace(df$number_of_ABX_first_year, is.na(df$number_of_ABX_first_year), 0)
 ```
 
-Creating explanatory variables:
+
 ```{r}
+#Creating explanatory variables:
 df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year + ABX_fisrt_year)>0,1,0), is_atopic_second_year = ifelse((food_allergy_24_month + inhalation_24_month + AD_24_month)>0,1,0))
 ```
-The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
+
 ```{r}
+#The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
+
 covid_start_date <- as.Date("2020-01-30")
 covid_mid_date <- as.Date("2020-07-30")
 df <- df %>% mutate(covid_time = ifelse(DOB < covid_start_date,1,ifelse(DOB < covid_mid_date, 2,3)))
 df[,c("DOB","covid_time")]
 table(df$covid_time)
 ```
+# Summary of the data:
 
 ```{r}
 # Taking a first view at data: 
@@ -85,8 +103,6 @@ glimpse(df)
 df[which(df$mother_year_birth> 2000),] # to take off ?? 
 ```
 
-
-# Summary of the data:
 ```{r}
 attach(df) ##מה זה? -- יוצר משתנה עבור כל עמודה בפנה עצמה סלי קשר לדאטה
 
@@ -108,10 +124,10 @@ NA_count <- NA_count %>% mutate(Name = rownames(NA_count))
 NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 ```
 
-# two dimention tables:
-
-covid time:
 ```{r}
+# two dimention tables:
+#covid time:
+
 print("SES")
 table(df$covid_time,df$SES)
 print("gender")
