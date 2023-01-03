@@ -78,11 +78,15 @@ df$number_of_ABX_first_year<- replace(df$number_of_ABX_first_year, is.na(df$numb
 
 
 ```{r}
-#Creating explanatory variables:
+#Creating dependent variables:
+#option A of explanatory var:
 df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year + ABX_fisrt_year)>0,1,0), is_atopic_second_year = ifelse((food_allergy_24_month + inhalation_24_month + AD_24_month)>0,1,0))
+#option B of explanatory var:
+#From mail
 ```
 
 ```{r}
+#Choosing explanatory variables: Ones that have a sufficient number of observation before and after Corona
 #The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
 
 covid_start_date <- as.Date("2020-01-30")
@@ -104,7 +108,7 @@ df[which(df$mother_year_birth> 2000),] # to take off ??
 ```
 
 ```{r}
-attach(df) ##מה זה? -- יוצר משתנה עבור כל עמודה בפנה עצמה סלי קשר לדאטה
+attach(df) ##מה זה? -- יוצר משתנה עבור כל עמודה בפנה עצמה בלי קשר לדאטה
 
 # Show the distribution of some variables
 hist(mother_year_birth)
@@ -114,7 +118,7 @@ hist(SES) #socio-economic status
 ```{r}
 # Frequency table for each column
 tablelist <- mapply(table, df)
-tablelist
+#tablelist
 ```
 
 ```{r}
@@ -123,11 +127,9 @@ NA_count <- as.data.frame(t(df %>% summarise_all(funs(sum(is.na(.)))))) %>% dply
 NA_count <- NA_count %>% mutate(Name = rownames(NA_count))
 NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 ```
-
-```{r}
 # two dimention tables:
-#covid time:
-
+```{r}
+#For each explanatory variable:
 print("SES")
 table(df$covid_time,df$SES)
 print("gender")
@@ -154,12 +156,10 @@ print("daycare_24month")
 table(df$covid_time,df$daycare_24month)
 print("vaccines_24month")
 table(df$covid_time,df$vaccines_24month)
+```
 
-
-
-
-
-
+```{r}
+#For each dependent variable: First year
 print("HRAD_first_year")
 table(df$covid_time,df$HRAD_first_year)
 print("AD_first_year")
@@ -170,7 +170,17 @@ print("ABX_fisrt_year")
 table(df$covid_time,df$ABX_fisrt_year)
 print("is_atopic_first_year")
 table(df$covid_time,df$is_atopic_first_year)
+```
+```{r}
+table(df$mother_year_birth,df$is_atopic_first_year)
 
+table(df$mother_year_birth,df$is_atopic_first_year)
+
+```
+
+
+```{r}
+#For each dependent variable: Second year
 print("food_allergy_24_month")
 table(df$covid_time,df$food_allergy_24_month)
 print("inhalation_24_month")
@@ -197,6 +207,17 @@ table(df$covid_time,df$is_atopic_second_year)
 #df$month_F
 colnames(df)[49:83]
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
