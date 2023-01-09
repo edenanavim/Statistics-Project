@@ -11,9 +11,9 @@ options(scipen=5, digits = 5)
 
 ```{r}
 # Reading the file:
-dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
-#dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_1.11.22_raw.xlsx"
-#dir<- 
+# dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+#dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
     
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -89,11 +89,18 @@ df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year
 #Choosing explanatory variables: Ones that have a sufficient number of observation before and after Corona
 #The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
 
-covid_start_date <- as.Date("2020-01-30")
-covid_mid_date <- as.Date("2020-07-30")
-df <- df %>% mutate(covid_time = ifelse(DOB < covid_start_date,1,ifelse(DOB < covid_mid_date, 2,3)))
-df[,c("DOB","covid_time")]
+group1 <- as.Date("2019-03-01")
+group2 <- as.Date("2020-03-11")
+group3 <- as.Date("2021-02-07")
+df <- df %>% mutate(covid_time = ifelse(DOB < group1, 1, ifelse(DOB < group2, 2, ifelse(DOB<group3, 3, 4))))
 table(df$covid_time)
+
+# at this moment there is no sutible data from group 4 - post corona 
+
+# mean(df[which(df$covid_time == 1),]$is_atopic_second_year, na.rm = T)
+# mean(df[which(df$covid_time == 2),]$is_atopic_second_year, na.rm = T)
+# mean(df[which(df$covid_time == 3),]$is_atopic_second_year, na.rm = T)
+
 ```
 # Summary of the data:
 
