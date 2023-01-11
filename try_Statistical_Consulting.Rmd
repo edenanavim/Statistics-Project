@@ -4,6 +4,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(reshape)
 options(scipen=5, digits = 5)
 ```
 
@@ -12,8 +13,8 @@ options(scipen=5, digits = 5)
 ```{r}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-#dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
     
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -178,6 +179,7 @@ table(df$covid_time,df$ABX_fisrt_year)
 print("is_atopic_first_year")
 table(df$covid_time,df$is_atopic_first_year)
 ```
+
 ```{r}
 table(df$mother_year_birth,df$is_atopic_first_year)
 
@@ -209,15 +211,20 @@ table(df$covid_time,df$is_atopic_second_year)
 
 ```
 
-
+remove NA:
 ```{r}
-#df$month_F
-colnames(df)[49:83]
+df <- df %>% drop_na(AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_24_month, inhalation_24_month, AD_24_month) 
 ```
 
+plots for presentation:
+```{r}
+plot_df_1 <- df %>% select(covid_time, AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_24_month, inhalation_24_month, AD_24_month) %>% group_by(covid_time) %>% summarise(AD_first_year = sum(AD_first_year), FA_first_year = sum(FA_first_year), ABX_fisrt_year = sum(ABX_fisrt_year) ,food_allergy_24_month = sum(food_allergy_24_month), inhalation_24_month = sum(inhalation_24_month), AD_24_month = sum(AD_24_month)) %>% gather(chronic_disease, count, AD_first_year:AD_24_month, factor_key=TRUE)
 
+ggplot(plot_df_1,aes(x=chronic_disease, y= count, fill = as.factor(covid_time))) +
+    geom_col(position = "dodge")+ theme(axis.text.x = element_text(angle = 45, vjust = 0.7)) + scale_fill_discrete(name = "Covid Group")+ xlab("Chronic Disease") + ylab("Cases")
 
-
+table(covid_time)
+```
 
 
 
@@ -253,6 +260,9 @@ summary(mdl)
 ```{r}
 cor(intresting_col, use="complete.obs")
 ```
+
+
+
 
 ```{r}
 ggplot(gather(intresting_col[,1:12]) %>% na.omit() , aes(value)) + 
