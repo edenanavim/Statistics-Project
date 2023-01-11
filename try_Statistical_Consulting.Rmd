@@ -30,20 +30,20 @@ df <- df %>% filter(month_survey_complete == 2)
 df <- df[,-c(51:88)]
 
 # Removing columns with allot on NA:
-not_relevant <- c('allergist_followup', 'last_spt', 'epipen', 'mistake_exposure', 'reaction_type24', 'diagnosis_by', 'lost_of_followup')
+not_relevant <- c('allergist_followup', 'last_spt', 'epipen', 'mistake_exposure', 'reaction_type24', 'diagnosis_by', 'lost_of_followup',"mother_no_comorbidities","mother_other","father_no_comorbidities","father_other","sibling1_other","sibling1_no_comorbidities","sibling2_other","sibling2_no_comorbidities","sibling3_other","sibling3_no_comorbidities","sibling4_other","sibling4_no_comorbidities")
 df <- df[-which(colnames(df) %in% not_relevant)]
 
 # Adding binary columns 
 # A. Did any one from family (mother, father, sib) have *any* of the disease?
-df$family_Atopic_diseases_sum <- rowSums(df[,14:49])
+df$family_Atopic_diseases_sum <- rowSums(df[,14:37])
 
 # B. Did somebody from family have a specific disease?
 # NEED TO FILL IN
 
 # C. Did a disease appear in a specific family member?
-df$mother_Atopic_diseases_sum <- rowSums(df[,14:19])
-df$father_Atopic_diseases_sum <- rowSums(df[,20:25])
-df$sibling_Atopic_diseases_sum <- rowSums(df[,26:49])
+df$mother_Atopic_diseases_sum <- rowSums(df[,14:17])
+df$father_Atopic_diseases_sum <- rowSums(df[,18:21])
+df$sibling_Atopic_diseases_sum <- rowSums(df[,22:37])
 
 df <- df %>% mutate(family_Atopic_diseases = ifelse(family_Atopic_diseases_sum >0,1,0),
                     mother_Atopic_diseases = ifelse(mother_Atopic_diseases_sum>0,1,0),
@@ -217,17 +217,28 @@ df <- df %>% drop_na(AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_2
 ```
 
 plots for presentation:
-```{r}
-plot_df_1 <- df %>% select(covid_time, AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_24_month, inhalation_24_month, AD_24_month) %>% group_by(covid_time) %>% summarise(AD_first_year = sum(AD_first_year), FA_first_year = sum(FA_first_year), ABX_fisrt_year = sum(ABX_fisrt_year) ,food_allergy_24_month = sum(food_allergy_24_month), inhalation_24_month = sum(inhalation_24_month), AD_24_month = sum(AD_24_month)) %>% gather(chronic_disease, count, AD_first_year:AD_24_month, factor_key=TRUE)
+```{r,fig.width=10}
+
+plot_df_1 <- df %>% select(covid_time, AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% group_by(covid_time) %>% summarise(AD_first_year = sum(AD_first_year), AD_24_month = sum(AD_24_month), FA_first_year = sum(FA_first_year),food_allergy_24_month = sum(food_allergy_24_month), ABX_fisrt_year = sum(ABX_fisrt_year),inhalation_24_month = sum(inhalation_24_month)) %>% gather(chronic_disease, count, AD_first_year:inhalation_24_month, factor_key=TRUE)
+
+plot_df_2 <- df %>% select(covid_time,is_atopic_first_year,is_atopic_second_year) %>% group_by(covid_time) %>% summarise(is_atopic_first_year= sum(is_atopic_first_year), is_atopic_second_year= sum(is_atopic_second_year)) %>% gather(chronic_disease, count, is_atopic_first_year:is_atopic_second_year, factor_key=TRUE)
 
 ggplot(plot_df_1,aes(x=chronic_disease, y= count, fill = as.factor(covid_time))) +
-    geom_col(position = "dodge")+ theme(axis.text.x = element_text(angle = 45, vjust = 0.7)) + scale_fill_discrete(name = "Covid Group")+ xlab("Chronic Disease") + ylab("Cases")
+    geom_col() + xlab("Chronic Disease") + ylab("Cases") +
+  scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),name = "Group")
+
+ggplot(plot_df_2,aes(x=chronic_disease, y= count, fill = as.factor(covid_time))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "Group")+ xlab("Chronic Disease") + ylab("Cases") +
+  scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
 
 table(covid_time)
 ```
 
-
-
+```{r}
+explanatory_variables <- df %>% select(mother_year_birth,SES, Jew/Arab,DOB, gender, mother_education, number_of_children, preganancy_number,type_of_pregnancy,Allergy_total,mother_asthma,mother_atopic_dermatitis,mother_Allergic_rhinitis,mother_food_allergy,father_asthma,father_atopic_dermatitis,father_Allergic_rhinitis,father_food_allergy,sibling1_asthma,sibling1_atopic_dermatitis,sibling1_Allergic_rhinitis,sibling1_food_allergy,sibling2_asthma,sibling2_atopic_dermatitis,sibling2_Allergic_rhinitis,sibling2_food_allergy,sibling3_asthma,sibling3_atopic_dermatitis,sibling3_Allergic_rhinitis,sibling3_food_allergy,sibling4_asthma,sibling4_atopic_dermatitis,sibling4_Allergic_rhinitis,sibling4_food_allergy,HRAD_first_year,AD_first_year,FA_first_year,ABX_fisrt_year, number_of_ABX_first_year,vaccine_12mo,nursing_setup_at_12mo,daycare_24month,vaccines_24month,food_allergy_24_month,inhalation_24_month,number_inhalation,prevention_therapy,AD_24_month,AD_treatment_24_month,steroids_treatment24,number_steroid_treat,chronic_rhinitis_24_month,ABX_treatment_24_months,number_ABX_treatment_24_months,hospitalization_24_months,chronic_disease_24,month_survey_complete,family_Atopic_diseases_sum,mother_Atopic_diseases_sum,father_Atopic_diseases_sum,sibling_Atopic_diseases_sum, family_Atopic_diseases,mother_Atopic_diseases,father_Atopic_diseases,sibling_Atopic_diseases,is_atopic_first_year,is_atopic_second_year,covid_time)
+df
+colnames(df)
+```
 
 
 
