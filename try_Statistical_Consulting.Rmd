@@ -5,6 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(reshape)
+library(glue)
 options(scipen=5, digits = 5)
 ```
 
@@ -61,6 +62,7 @@ df$steroids_treatment24[df$steroids_treatment24 == 2] <- 0
 df$ABX_treatment_24_months[df$ABX_treatment_24_months == 2] <- 0
 df$hospitalization_24_months[df$hospitalization_24_months == 2] <- 0
 df$chronic_disease_24[df$chronic_disease_24 == 2] <- 0
+df$type_of_pregnancy[df$type_of_pregnancy == 2] <- 0
 
 #Changing NA to 0 for 
 df$number_ABX_treatment_24_months<- replace(df$number_ABX_treatment_24_months, is.na(df$number_ABX_treatment_24_months), 0)
@@ -230,14 +232,128 @@ ggplot(plot_df_1,aes(x=chronic_disease, y= count, fill = as.factor(covid_time)))
 ggplot(plot_df_2,aes(x=chronic_disease, y= count, fill = as.factor(covid_time))) +
     geom_col(position = "dodge") + scale_fill_discrete(name = "Group")+ xlab("Chronic Disease") + ylab("Cases") +
   scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+```
+SES vs is atopic
+```{r}
+ggplot(data=df, aes(x=SES, group= as.factor(is_atopic_first_year), fill=as.factor(is_atopic_first_year))) +
+    geom_density(adjust=1.5, alpha=.4) 
 
-table(covid_time)
+ggplot(data=df, aes(x=SES, group= as.factor(AD_first_year), fill=as.factor(AD_first_year))) +
+    geom_density(adjust=1.5, alpha=.4) 
+
+ggplot(data=df, aes(x=SES, group= as.factor(is_atopic_second_year), fill=as.factor(is_atopic_second_year))) +
+    geom_density(adjust=1.5, alpha=.4) 
+```
+
+```{r}
+plot_df_3 <- df %>% select(SES,is_atopic_first_year,is_atopic_second_year) %>% drop_na() %>% group_by(SES) %>% summarise(is_atopic_first_year= sum(is_atopic_first_year), is_atopic_second_year= sum(is_atopic_second_year)) %>% gather(chronic_disease, count, is_atopic_first_year:is_atopic_second_year, factor_key=TRUE)
+
+plot_df_3 <- df %>% select(SES,is_atopic_first_year,is_atopic_second_year) %>% drop_na() %>% group_by(SES) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year)) %>% gather(chronic_disease, count, is_atopic_first_year:is_atopic_second_year, factor_key=TRUE)
+
+ggplot(plot_df_3,aes(x=as.factor(SES), y= count, fill = as.factor(chronic_disease))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "Group")+ xlab("SES") + ylab("Cases") +
+  scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
+table(SES)
+```
+Age of mother
+```{r}
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(is_atopic_first_year), fill=as.factor(is_atopic_first_year))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(is_atopic_second_year), fill=as.factor(is_atopic_second_year))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(AD_first_year), fill=as.factor(AD_first_year))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(AD_24_month), fill=as.factor(AD_24_month))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(FA_first_year), fill=as.factor(FA_first_year))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(food_allergy_24_month), fill=as.factor(food_allergy_24_month))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(ABX_fisrt_year), fill=as.factor(ABX_fisrt_year))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=mother_age, group= as.factor(inhalation_24_month), fill=as.factor(inhalation_24_month))) +
+    geom_density(adjust=1.5, alpha=.4)
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(is_atopic_first_year), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(is_atopic_second_year), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(AD_first_year), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(AD_24_month), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(FA_first_year), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(food_allergy_24_month), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(ABX_fisrt_year), y=mother_age)) + 
+  geom_boxplot()
+
+ggplot(data=df%>% mutate(mother_age = 2023 - mother_year_birth), aes(x=as.factor(inhalation_24_month), y=mother_age)) + 
+  geom_boxplot()
+```
+
+
+```{r,fig.width=10}
+plot_df_4 <- df %>% select(mother_education,is_atopic_first_year,is_atopic_second_year,AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% drop_na() %>% group_by(mother_education) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year),AD_first_year = mean(AD_first_year), AD_24_month = mean(AD_24_month), FA_first_year = mean(FA_first_year),food_allergy_24_month = mean(food_allergy_24_month), ABX_fisrt_year = mean(ABX_fisrt_year),inhalation_24_month = mean(inhalation_24_month)) %>% gather(chronic_disease, mean, is_atopic_first_year:inhalation_24_month, factor_key=TRUE)
+
+ggplot(plot_df_4,aes(x=as.factor(chronic_disease), y= mean, fill = as.factor(mother_education))) +
+      geom_col(position = "dodge") + scale_fill_discrete(name = "mother_education")+ xlab("mother_education") + ylab("percent diseas") #+scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
+
+```
+
+```{r,fig.width=10}
+plot_df_5 <- df %>% select(number_of_children,is_atopic_first_year,is_atopic_second_year,AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% drop_na() %>% group_by(number_of_children) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year),AD_first_year = mean(AD_first_year), AD_24_month = mean(AD_24_month), FA_first_year = mean(FA_first_year),food_allergy_24_month = mean(food_allergy_24_month), ABX_fisrt_year = mean(ABX_fisrt_year),inhalation_24_month = mean(inhalation_24_month)) %>% gather(chronic_disease, mean, is_atopic_first_year:inhalation_24_month, factor_key=TRUE)
+
+ggplot(plot_df_5,aes(x=as.factor(chronic_disease), y= mean, fill = as.factor(number_of_children))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "number_of_children")+ xlab("chronic_disease") + ylab("percent of disease")# +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
+
+```
+
+```{r,fig.width=12}
+plot_df_6 <- df %>% select(preganancy_number,is_atopic_first_year,is_atopic_second_year,AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% drop_na() %>% group_by(preganancy_number) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year),AD_first_year = mean(AD_first_year), AD_24_month = mean(AD_24_month), FA_first_year = mean(FA_first_year),food_allergy_24_month = mean(food_allergy_24_month), ABX_fisrt_year = mean(ABX_fisrt_year),inhalation_24_month = mean(inhalation_24_month)) %>% gather(chronic_disease, mean, is_atopic_first_year:inhalation_24_month, factor_key=TRUE)
+
+ggplot(plot_df_6,aes(x=as.factor(chronic_disease), y= mean, fill = as.factor(preganancy_number))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "preganancy_number")+ xlab("chronic_disease") + ylab("percent of disease")# +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
+```
+
+```{r,fig.width=12}
+plot_df_7 <- df %>% select(type_of_pregnancy,is_atopic_first_year,is_atopic_second_year,AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% drop_na() %>% group_by(type_of_pregnancy) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year),AD_first_year = mean(AD_first_year), AD_24_month = mean(AD_24_month), FA_first_year = mean(FA_first_year),food_allergy_24_month = mean(food_allergy_24_month), ABX_fisrt_year = mean(ABX_fisrt_year),inhalation_24_month = mean(inhalation_24_month)) %>% gather(chronic_disease, mean, is_atopic_first_year:inhalation_24_month, factor_key=TRUE)
+
+ggplot(plot_df_7,aes(x=as.factor(chronic_disease), y= mean, fill = as.factor(type_of_pregnancy))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "type_of_pregnancy")+ xlab("chronic_disease") + ylab("percent of disease")# +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
+```
+
+```{r,fig.width=12}
+plot_df_8 <- df %>% select(number_ABX_treatment_24_months,is_atopic_first_year,is_atopic_second_year,AD_first_year, AD_24_month, FA_first_year,food_allergy_24_month, ABX_fisrt_year,inhalation_24_month) %>% drop_na() %>% group_by(number_ABX_treatment_24_months) %>% summarise(is_atopic_first_year= mean(is_atopic_first_year), is_atopic_second_year= mean(is_atopic_second_year),AD_first_year = mean(AD_first_year), AD_24_month = mean(AD_24_month), FA_first_year = mean(FA_first_year),food_allergy_24_month = mean(food_allergy_24_month), ABX_fisrt_year = mean(ABX_fisrt_year),inhalation_24_month = mean(inhalation_24_month)) %>% gather(chronic_disease, mean, is_atopic_first_year:inhalation_24_month, factor_key=TRUE)
+
+ggplot(plot_df_8,aes(x=as.factor(chronic_disease), y= mean, fill = as.factor(number_ABX_treatment_24_months))) +
+    geom_col(position = "dodge") + scale_fill_discrete(name = "number_ABX_treatment_24_months")+ xlab("chronic_disease") + ylab("percent of disease")# +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'))
+
 ```
 
 ```{r}
 explanatory_variables <- df %>% select(mother_year_birth,SES, Jew/Arab,DOB, gender, mother_education, number_of_children, preganancy_number,type_of_pregnancy,Allergy_total,mother_asthma,mother_atopic_dermatitis,mother_Allergic_rhinitis,mother_food_allergy,father_asthma,father_atopic_dermatitis,father_Allergic_rhinitis,father_food_allergy,sibling1_asthma,sibling1_atopic_dermatitis,sibling1_Allergic_rhinitis,sibling1_food_allergy,sibling2_asthma,sibling2_atopic_dermatitis,sibling2_Allergic_rhinitis,sibling2_food_allergy,sibling3_asthma,sibling3_atopic_dermatitis,sibling3_Allergic_rhinitis,sibling3_food_allergy,sibling4_asthma,sibling4_atopic_dermatitis,sibling4_Allergic_rhinitis,sibling4_food_allergy,HRAD_first_year,AD_first_year,FA_first_year,ABX_fisrt_year, number_of_ABX_first_year,vaccine_12mo,nursing_setup_at_12mo,daycare_24month,vaccines_24month,food_allergy_24_month,inhalation_24_month,number_inhalation,prevention_therapy,AD_24_month,AD_treatment_24_month,steroids_treatment24,number_steroid_treat,chronic_rhinitis_24_month,ABX_treatment_24_months,number_ABX_treatment_24_months,hospitalization_24_months,chronic_disease_24,month_survey_complete,family_Atopic_diseases_sum,mother_Atopic_diseases_sum,father_Atopic_diseases_sum,sibling_Atopic_diseases_sum, family_Atopic_diseases,mother_Atopic_diseases,father_Atopic_diseases,sibling_Atopic_diseases,is_atopic_first_year,is_atopic_second_year,covid_time)
-df
-colnames(df)
+
 ```
 
 
