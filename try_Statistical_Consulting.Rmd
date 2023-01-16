@@ -107,7 +107,7 @@ group2 <- as.Date("2020-03-11")
 group3 <- as.Date("2021-02-07")
 df <- df %>% mutate(covid_time = ifelse(DOB < group1, 1, ifelse(DOB < group2, 2, ifelse(DOB<group3, 3, 4))))
 table(df$covid_time)
-
+df <- df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
 
 df <- df %>% mutate(
         family_asthma = ifelse(mother_asthma + father_asthma + sibling1_asthma + sibling2_asthma + sibling3_asthma + sibling4_asthma >0,1,0),
@@ -117,7 +117,7 @@ df <- df %>% mutate(
 
 
 # at this moment there is no sutible data from group 4 - post corona 
-attach(df)
+# attach(df)
 ```
 
 # Summary of the data:
@@ -215,10 +215,7 @@ lapply(variable_list, covid_time_graphs)
 no_is_atopic = c('HRAD_first_year', 'AD_first_year', 'FA_first_year', 'ABX_fisrt_year',
                             'HRAD_second_year', 'AD_second_year', 'FA_second_year', 'ABX_second_year')
 
-atopic_longer_count <- df %>% select(c(no_is_atopic, covid_time,)) %>% drop_na() %>% group_by(covid_time) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols  =no_is_atopic, names_to = "chronic_disease", values_to = "mean") 
-
-atopic_longer_count <- atopic_longer_count %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
-
+atopic_longer_count <- df %>% select(c(no_is_atopic, covid_time,Born_at)) %>% drop_na() %>% group_by(covid_time, Born_at) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols  =no_is_atopic, names_to = "chronic_disease", values_to = "mean") 
 
 ggplot(atopic_longer_count, aes(covid_time, y = mean, fill = as.factor(covid_time))) + 
   geom_col() + facet_wrap(~chronic_disease,4,2) + geom_text(aes(label = round(atopic_longer_count$mean,3)), vjust = 0, size = 3) + theme_bw() +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
@@ -230,13 +227,10 @@ ggplot(atopic_longer_count, aes(covid_time, y = mean, fill = as.factor(covid_tim
 ```{r}
 is_atopic = c('is_atopic_first_year', 'is_atopic_second_year')
 
-is_atopic_df <- df %>% select(c(is_atopic, covid_time,)) %>% drop_na() %>% group_by(covid_time) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols = is_atopic, names_to = "chronic_disease", values_to = "mean") 
-
-is_atopic_longer <- is_atopic_df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
+is_atopic_longer <- df %>% select(c(is_atopic, covid_time,Born_at)) %>% drop_na() %>% group_by(covid_time, Born_at) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols = is_atopic, names_to = "chronic_disease", values_to = "mean") 
 
 ggplot(is_atopic_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))) + 
-  geom_col() + theme_bw() +
-  facet_wrap(~chronic_disease) + 
+  geom_col() + theme_bw() + facet_wrap(~chronic_disease) + 
   scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
                     name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21')) + 
   xlab("")+  ylab("proportion") + theme(axis.text.x = element_text(color = 'white')) +
@@ -246,8 +240,7 @@ ggplot(is_atopic_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))
 
 ```{r, warning=F}
 atopic_binari_exp <- c('family_asthma', 'family_AD', 'family_Allergic_rhinitis', 'family_FA')
-new_df <- df %>% select(c(atopic_binari_exp, covid_time,)) %>% drop_na() %>% group_by(covid_time) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols = atopic_binari_exp, names_to = "chronic_disease", values_to = "mean") 
-new_df_longer <- new_df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
+new_df_longer <- df %>% select(c(atopic_binari_exp, covid_time, Born_at)) %>% drop_na() %>% group_by(covid_time, Born_at) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols = atopic_binari_exp, names_to = "chronic_disease", values_to = "mean") 
 
 ggplot(new_df_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))) + 
   geom_col() + theme_bw() +
@@ -258,24 +251,51 @@ ggplot(new_df_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))) +
   geom_text(aes(label = round(new_df_longer$mean,3)), vjust = 0, size = 3) + ylim(c(0, 0.25))
 ```
 
-## number_of_treatments VS covid time
+## covid time VS number_of_treatments
 צריך להפוך את זה לגרף מוערם 
-```{r, warning=F}
+
+צריך לשים לב שאני פילטרתי את מספר בטיפולים = 0 כי אני רוצה לראות את היחס בין מי שכן קיבל טיפול, האם החולי הפך לאגרסיבי יותר ? 
+```{r}
 # how many treatment was given in different covid time groups 
-
 treatments_kpi <- c('number_of_ABX_first_year', 'number_inhalation','number_steroid_treat')
-treatments_prop <- function(kpi){
-  data <- df %>% select(covid_time, kpi) %>% filter(df[[kpi]] > 0)
-  return(round(ftable(data[['covid_time']], data[[kpi]]) / rowSums(ftable(data[['covid_time']], data[[kpi]])),3))}
 
-sapply(treatments_kpi, treatments_prop, simplify = FALSE)
+# proportion tables 
+# treatments_prop <- function(kpi){
+#   data <- df %>% select(covid_time, kpi) %>% filter(df[[kpi]] > 0)
+#   return(round(ftable(data[['covid_time']], data[[kpi]]) / rowSums(ftable(data[['covid_time']], data[[kpi]])),3))}
+# sapply(treatments_kpi, treatments_prop, simplify = FALSE)
+
+
+
+ggplot(df %>% filter(number_of_ABX_first_year >0 ), aes(x=covid_time, fill=as.factor(number_of_ABX_first_year))) + geom_bar(position = "fill") + 
+  labs( title = 'covid time VS number_of_ABX_first_year', x = 'covid time group', y = 'count', fill = 'number of antib...') + theme_bw()
+df %>% filter(number_of_ABX_first_year >0 )%>% group_by(covid_time) %>% summarise(avg_of_ABX_first_year = mean(number_of_ABX_first_year))
+
+
+ggplot(df %>% filter(number_inhalation >0 ), aes(x=covid_time, fill=as.factor(number_inhalation))) + geom_bar(position = "fill") + 
+  labs( title = 'covid time VS number_inhalation', x = 'covid time group', y = 'count', fill = 'number of antib...') + theme_bw()
+df %>% filter(number_inhalation >0 )%>% group_by(covid_time) %>% summarise(avg_number_inhalation = mean(number_inhalation))
+
+
+ggplot(df %>% filter(number_steroid_treat >0 ), aes(x=covid_time, fill=as.factor(number_steroid_treat))) + geom_bar(position = "fill") + 
+  labs( title = 'covid time VS steroid_treat', x = 'covid time group', y = 'count', fill = 'number of antib...') + theme_bw()
+df %>% filter(number_steroid_treat >0 )%>% group_by(covid_time) %>% summarise(avg_steroid_treat = mean(number_steroid_treat))
 ```
 
 
 
 ## גרף של גיל האמא 
+```{r}
+ggplot(df, aes(mother_year_birth, fill = as.factor(covid_time))) + geom_density(alpha = 0.3) + theme_bw() + labs(title = 'mother year of birth VS. covid time', fill = 'covid time group')
+```
+
+
 
 ## השכלה של האמא 
+```{r}
+ggplot(df, aes(covid_time, fill = as.factor(mother_education))) + geom_bar(position = "fill")
+```
+
 
 ## כל הקטגוריים והבינאריים מול הקבוצות קורונה 
 
