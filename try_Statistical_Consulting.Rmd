@@ -14,8 +14,8 @@ options(scipen=5, digits = 5)
 ```{r}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
     
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -139,14 +139,16 @@ NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 n = 1439
 xxx <- df[is.na(df$mother_education),]
 
-round(ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year)),3)
+mother_education_NA <- round(ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year)),3)
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)/ #166
-ftable(xxx$covid_time, xxx$is_atopic_first_year)
-
-round(ftable(covid_time, is_atopic_first_year) / rowSums(ftable(covid_time, is_atopic_first_year)),3)
+# ftable(xxx$covid_time, xxx$is_atopic_first_year)
+# 
+mother_education_all <- round(ftable(covid_time, is_atopic_first_year) / rowSums(ftable(covid_time, is_atopic_first_year)),3)
 # ftable(covid_time, is_atopic_first_year) /n
-ftable(covid_time, is_atopic_first_year)
+# ftable(covid_time, is_atopic_first_year)
 
+pander(mother_education_NA)
+pander(mother_education_all)
 ```
 
 
@@ -184,9 +186,6 @@ exploreatory_variables <- c('HRAD_first_year', 'AD_first_year', 'FA_first_year',
 
 # Two dim table - covid time VS each column 
 ```{r}
-# table(is_atopic_first_year, covid_time)
-# table(is_atopic_second_year, covid_time)
-
 covid_time_table <- function(kpi){
   return(list(perc = round(ftable(covid_time, df[[kpi]]) / rowSums(ftable(covid_time, df[[kpi]])),3),
               n = table(covid_time, df[[kpi]])))}
@@ -212,15 +211,17 @@ lapply(variable_list, covid_time_graphs)
 # Graphs and tables that have been checked and relevant :
 ## covid time VS no_is_atopic
 ```{r, warning=F}
-no_is_atopic = c('HRAD_first_year', 'AD_first_year', 'FA_first_year', 'ABX_fisrt_year',
-                            'HRAD_second_year', 'AD_second_year', 'FA_second_year', 'ABX_second_year')
+no_is_atopic = c('HRAD_first_year', 'AD_first_year', 'FA_first_year', 
+                            'HRAD_second_year', 'AD_second_year', 'FA_second_year')
 
 atopic_longer_count <- df %>% select(c(no_is_atopic, covid_time,Born_at)) %>% drop_na() %>% group_by(covid_time, Born_at) %>% summarise_if(is.numeric, mean) %>% pivot_longer(cols  =no_is_atopic, names_to = "chronic_disease", values_to = "mean") 
 
 ggplot(atopic_longer_count, aes(covid_time, y = mean, fill = as.factor(covid_time))) + 
-  geom_col() + facet_wrap(~chronic_disease,4,2) + geom_text(aes(label = round(atopic_longer_count$mean,3)), vjust = 0, size = 3) + theme_bw() +scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
+  geom_col() + facet_wrap(~chronic_disease,4,2) + 
+  geom_text(aes(label = round(atopic_longer_count$mean,3)), vjust = 0, size = 3.5, fontface = "bold") + theme_bw() +
+  scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
                     name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21')) + 
-  xlab("") + theme(axis.text.x = element_text( color = 'white')) + ylim(c(0,0.7))
+  xlab("") + ylab('prop') + theme(axis.text.x = element_text( color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) + ylim(c(0,0.7))
 ```
 ## covid time VS is_atopic
 
@@ -233,8 +234,8 @@ ggplot(is_atopic_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))
   geom_col() + theme_bw() + facet_wrap(~chronic_disease) + 
   scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
                     name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21')) + 
-  xlab("")+  ylab("proportion") + theme(axis.text.x = element_text(color = 'white')) +
-  geom_text(aes(label = round(is_atopic_longer$mean,3)), vjust = 0, size = 3)
+  xlab("")+  ylab("proportion") + theme(axis.text.x = element_text(color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) +
+  geom_text(aes(label = round(is_atopic_longer$mean,3)), vjust = 0, size = 3.5, fontface = "bold")
 ```
 ## covid time VS family 
 
@@ -247,8 +248,8 @@ ggplot(new_df_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))) +
   facet_wrap(~chronic_disease) + 
   scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4'),
                     name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21')) + 
-  xlab("") + ylab("proportion") + theme(axis.text.x = element_text(color = 'white')) +
-  geom_text(aes(label = round(new_df_longer$mean,3)), vjust = 0, size = 3) + ylim(c(0, 0.25))
+  xlab("") + ylab("proportion") + theme(axis.text.x = element_text(color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) +
+  geom_text(aes(label = round(new_df_longer$mean,3)), vjust = 0, size = 3.5, fontface = "bold") + ylim(c(0, 0.25))
 ```
 
 ## covid time VS number_of_treatments
@@ -266,21 +267,25 @@ treatments_kpi <- c('number_of_ABX_first_year', 'number_inhalation','number_ster
 #   return(round(ftable(data[['covid_time']], data[[kpi]]) / rowSums(ftable(data[['covid_time']], data[[kpi]])),3))}
 # sapply(treatments_kpi, treatments_prop, simplify = FALSE)
 
-
-
-ggplot(df %>% filter(number_of_ABX_first_year >0 )%>% mutate(covid_time = as.factor(covid_time)), aes(x=covid_time, fill=as.factor(number_of_ABX_first_year))) + geom_bar(position = "fill") + 
-  labs( title = 'covid time VS number_of_ABX_first_year', x = 'covid time group', y = 'count', fill = 'number of antib...')+ scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw()
-df %>% filter(number_of_ABX_first_year >0 )%>% group_by(covid_time) %>% summarise(avg_of_ABX_first_year = mean(number_of_ABX_first_year))
+df %>% filter(number_of_ABX_first_year >0 )%>% mutate(covid_time = as.factor(covid_time)) %>% ggplot(aes(x=covid_time, fill=as.factor(number_of_ABX_first_year))) + geom_bar(position = "fill") + labs( title = 'covid time VS number_of_ABX_first_year', x = '', y = 'prop', fill = 'number of antibiotics treatments') + 
+  scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw() 
+avg1 <- df %>% filter(number_of_ABX_first_year >0 )%>% group_by(covid_time) %>% summarise(avg_of_ABX_first_year = mean(number_of_ABX_first_year), .groups = 'drop')
 
 
 ggplot(df %>% filter(number_inhalation >0 )%>% mutate(covid_time = as.factor(covid_time)), aes(x=covid_time, fill=as.factor(number_inhalation))) + geom_bar(position = "fill") + 
-  labs( title = 'covid time VS number_inhalation', x = 'covid time group', y = 'count', fill = 'number of antib...')+ scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw()
-df %>% filter(number_inhalation >0 )%>% group_by(covid_time) %>% summarise(avg_number_inhalation = mean(number_inhalation))
+  labs( title = 'covid time VS number_inhalation', x = '', y = 'prop', fill = 'number of inhalation treatments')+ scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw()
+avg2 <- df %>% filter(number_inhalation >0 )%>% group_by(covid_time) %>% summarise(avg_number_inhalation = mean(number_inhalation), .groups = 'drop')
+
 
 
 ggplot(df %>% filter(number_steroid_treat >0 ) %>% mutate(covid_time = as.factor(covid_time)), aes(x=covid_time, fill=as.factor(number_steroid_treat))) + geom_bar(position = "fill") + 
-  labs( title = 'covid time VS steroid_treat', x = 'covid time group', y = 'count', fill = 'number of antib...')+ scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw() 
-df %>% filter(number_steroid_treat >0 )%>% group_by(covid_time) %>% summarise(avg_steroid_treat = mean(number_steroid_treat))
+  labs( title = 'covid time VS steroid_treat', x = '', y = 'prop', fill = 'number of steroid treatments')+ scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw() 
+avg3 <- df %>% filter(number_steroid_treat >0 )%>% group_by(covid_time) %>% summarise(avg_steroid_treat = mean(number_steroid_treat), .groups = 'drop')
+
+
+all_avg <- left_join(avg1, avg2)
+all_avg <- left_join(all_avg, avg3)
+all_avg
 ```
 
 
@@ -307,16 +312,20 @@ p = as.data.frame(with(df,table(covid_time,preganancy_number))/rowSums(with(df,t
 
 ggplot(p,aes(x=as.factor(covid_time), y= Freq, fill = as.factor(preganancy_number))) +
     geom_col() + scale_fill_discrete(name = "preganancy_number")+ xlab("covid_time") + ylab("percentage")
+
+
+
 #type_of_pregnancy
 p = as.data.frame(with(df,table(covid_time,type_of_pregnancy))/rowSums(with(df,table(covid_time,type_of_pregnancy))))
-
 ggplot(p,aes(x=as.factor(covid_time), y= Freq, fill = as.factor(type_of_pregnancy))) +
     geom_col() + scale_fill_discrete(name = "type_of_pregnancy")+ xlab("covid_time") + ylab("percentage")
+
+
 #nursing_setup_at_12mo
 p = as.data.frame(with(df,table(covid_time,nursing_setup_at_12mo))/rowSums(with(df,table(covid_time,nursing_setup_at_12mo))))
-
 ggplot(p,aes(x=as.factor(covid_time), y= Freq, fill = as.factor(nursing_setup_at_12mo))) +
-    geom_col() + scale_fill_discrete(name = "nursing_setup_at_12mo")+ xlab("covid_time") + ylab("percentage")
+    geom_col() + labs(title = 'Type of nursing at first year VS covid time', x = ' ' , y = 'percentage', fill = 'nursing type:') + scale_x_discrete(labels = c('Up to March19','March19 - March20','March20 - Feb21')) + theme_bw() 
+
 ```
 
 ##covid time vs ther rest of binary variables:
@@ -338,7 +347,7 @@ ggplot(binary_longer, aes(covid_time, y = mean, fill = as.factor(covid_time))) +
 
 ## השכלה של האמא 
 ```{r}
-ggplot(df, aes(covid_time, fill = as.factor(mother_education))) + geom_bar(position = "fill")
+ggplot(df %>% drop_na(), aes(covid_time, fill = as.factor(mother_education))) + geom_bar(position = "fill")
 ```
 
 
@@ -535,6 +544,15 @@ lapply(exloretory_variables, DOB_explanatory)
 # lapply(categoric_exp , sibling)
 ```
 
+```{r}
+
+x <- df %>% select(c(number_inhalation, number_of_ABX_first_year, number_steroid_treat, is_atopic_first_year,is_atopic_second_year)) 
+
+
+cor_1 <- cor(x,  use = "pairwise.complete.obs" )
+corrplot(cor_1, method = 'color', order = 'FPC', type = 'lower', diag = FALSE, col = COL2('BrBG'))
+
+```
 
 
 
