@@ -130,6 +130,7 @@ tablelist <- mapply(table, df %>% select(-c(record_id, DOB, mother_year_birth)))
 
 # NA count 
 ```{r}
+# attach(df)
 library(pander)
 # How many NA are in each column
 NA_count <- as.data.frame(t(df %>% summarise_all(funs(sum(is.na(.)))))) %>% dplyr::rename("amount of NA" = 1) 
@@ -139,6 +140,7 @@ NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 n = 1439
 xxx <- df[is.na(df$mother_education),]
 
+<<<<<<< Updated upstream
 mother_education_NA <- round(ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year)),3)
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)/ #166
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)
@@ -149,6 +151,19 @@ mother_education_all <- round(ftable(covid_time, is_atopic_first_year) / rowSums
 
 pander(mother_education_NA)
 pander(mother_education_all)
+=======
+mother_education_NA_dist <- ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year))
+# ftable(xxx$covid_time, xxx$is_atopic_first_year)/ #166
+# ftable(xxx$covid_time, xxx$is_atopic_first_year)
+
+all_data_dist <- ftable(covid_time, is_atopic_first_year) / rowSums(ftable(covid_time, is_atopic_first_year))
+# ftable(covid_time, is_atopic_first_year) /n
+# ftable(covid_time, is_atopic_first_year)
+
+# אפשר להציג אותם אחד ליד השני 
+pander(mother_education_NA_dist)
+pander(all_data_dist)
+>>>>>>> Stashed changes
 ```
 
 
