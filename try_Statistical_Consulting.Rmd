@@ -118,13 +118,16 @@ df <- df %>% mutate(
 
 # at this moment there is no sutible data from group 4 - post corona 
 attach(df)
+
+
+write.csv(df, "C:/Users/Shahar/Documents/GitHub/Statistics-Project/final_df.csv", row.names = FALSE)
 ```
 
 # Summary of the data:
 ```{r}
 # Frequency table for each column
 tablelist <- mapply(table, df %>% select(-c(record_id, DOB, mother_year_birth)))
-# tablelist
+tablelist[['covid_time']] / sum(tablelist[['covid_time']])
 ```
 
 
@@ -140,7 +143,7 @@ NA_column = NA_count %>% filter(`amount of NA` >0) %>% arrange(`amount of NA`)
 n = 1439
 xxx <- df[is.na(df$mother_education),]
 
-<<<<<<< Updated upstream
+# Updated upstream
 mother_education_NA <- round(ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year)),3)
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)/ #166
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)
@@ -151,7 +154,7 @@ mother_education_all <- round(ftable(covid_time, is_atopic_first_year) / rowSums
 
 pander(mother_education_NA)
 pander(mother_education_all)
-=======
+# =======
 mother_education_NA_dist <- ftable(xxx$covid_time, xxx$is_atopic_first_year) / rowSums(ftable(xxx$covid_time, xxx$is_atopic_first_year))
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)/ #166
 # ftable(xxx$covid_time, xxx$is_atopic_first_year)
@@ -163,7 +166,7 @@ all_data_dist <- ftable(covid_time, is_atopic_first_year) / rowSums(ftable(covid
 # אפשר להציג אותם אחד ליד השני 
 pander(mother_education_NA_dist)
 pander(all_data_dist)
->>>>>>> Stashed changes
+# >>>>>>> Stashed changes
 ```
 
 
@@ -593,4 +596,14 @@ corrplot(cor_2, method = 'color', order = 'FPC', type = 'lower', diag = FALSE, c
 
 
 
+
+
+
+
+# Check for sample ratio mismatch 
+```{r}
+
+
+
+```
 
