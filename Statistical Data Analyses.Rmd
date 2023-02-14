@@ -13,6 +13,8 @@ library(ggplot2)
 library(tidyr)
 library(reshape)
 library(glue)
+library(mgcv)
+
 options(scipen=5, digits = 5)
 ```
 
@@ -172,17 +174,19 @@ covid_time_table <- function(kpi){
               n = table(covid_time, df[[kpi]])))}
 
 sapply(binari_exp, covid_time_table, simplify =FALSE)
-# sapply(discrite_exp, covid_time_table, simplify =FALSE)
-# sapply(categoric_exp, covid_time_table, simplify =FALSE)
-# sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
+sapply(discrite_exp, covid_time_table, simplify =FALSE)
+sapply(categoric_exp, covid_time_table, simplify =FALSE)
+sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
 ```
 
 
 # Chi2 test 
 ```{r, warning=F}
+alpha = 0.01
 chisq_goodness <- function(kpi){
   t <- chisq.test(df[[kpi]], df$covid_time)
-  return (t$p.value < 0.5)} 
+  # cat(kpi, '| p_val' , t$p.value, '| SRM =' , t$p.value < alpha, '\n ')
+  return(list('p_val'=t$p.value, 'SRM'= t$p.value < alpha))} 
 
 
 sapply(binari_exp, chisq_goodness, simplify =FALSE)
@@ -191,9 +195,74 @@ sapply(categoric_exp, chisq_goodness, simplify =FALSE)
 sapply(exploreatory_variables, chisq_goodness, simplify =FALSE)
 ```
 
-
-
+# Analyze after meeting with micha : 
 ```{r}
+explanatory_kpi = c('Jew/Arab', 'gender', 'Allergy_total','vaccine_12mo', 'prevention_therapy',
+                'family_Atopic_diseases', 'mother_Atopic_diseases', 'father_Atopic_diseases', 'sibling_Atopic_diseases', 
+                'mother_year_birth', 'DOB', 'mother_education',
+                'SES', 'number_of_children', 'preganancy_number', 'number_of_ABX_first_year', 'number_inhalation',
+                'family_Atopic_diseases_sum', 'mother_Atopic_diseases_sum', 'father_Atopic_diseases_sum', 'sibling_Atopic_diseases_sum',
+                'sibling_asthma_sum', 'sibling_AD_sum', 'sibling_Allergic_rhinitis_sum', 'sibling_FA_sum',
+                'type_of_pregnancy', 'nursing_setup_at_12mo', 'covid_time')
+
+mdl1 <- glm(is_atopic_first_year~ `Jew/Arab` + gender + Allergy_total + prevention_therapy + 
+             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
+             type_of_pregnancy + covid_time, data = df, family = "binomial")
+summary(mdl1)
+
+mdl2 <- glm(is_atopic_second_year~ `Jew/Arab` + gender + Allergy_total + vaccine_12mo + prevention_therapy + 
+             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
+             number_of_ABX_first_year + number_inhalation + type_of_pregnancy + nursing_setup_at_12mo + covid_time, data = df, family = "binomial")
+summary(mdl2)
+
+mod_gam1 = gam(is_atopic_first_year ~  gender + Allergy_total + prevention_therapy + 
+             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
+             type_of_pregnancy + s(date_of_birth, bs = "cr"), data = df)
+summary(mod_gam1)
+plot(mod_gam1)
+
+df$date_of_birth = as.numeric(as.Date('2018-01-14'))/ as.numeric(as.Date(df$DOB)) 
+
+
 
 ```
+
+# Logistic regression after finding SRM 
+```{r}
+SRM_kpi = c('vaccine_12mo ', 'number_of_ABX_first_year', 'type_of_pregnancy', 'nursing_setup_at_12mo')
+
+
+mdl1 <- glm(is_atopic_first_year~  type_of_pregnancy + covid_time, data = df, family = "binomial")
+summary(mdl1)
+
+mdl2 <- glm(is_atopic_second_year~ vaccine_12mo + number_of_ABX_first_year  + type_of_pregnancy+ nursing_setup_at_12mo + is_atopic_first_year + covid_time, data = df, family = "binomial")
+summary(mdl2)
+
+# data = df %>% group_by(covid_time) %>% summarise(is_atopic_first_year = sum(is_atopic_first_year), is_atopic_second_year = sum(is_atopic_second_year, na.rm = T), n = n_distinct(record_id))
+# data$prop1 = data$is_atopic_first_year / data$n
+# data$prop2 = data$is_atopic_second_year / data$n
+# 
+# data
+
+
+# Splines 
+# מודל לאי רציפות 
+# במקום להגדיר קבוצה להכניס את המשתנה של זמן בצורה רציפה - כאשר 0 זה התאריך הראשון ו1 זה התאריך האחרון 
+# אם נכניס אותו בצורה רציפה למודל רגרסיה אז אני מקבלת משהו לינארי 
+# נרצה לעשות משהו לא לינארי אז אפשר להכני אותו באיזשהי צורה של ספליינס למודל 
+# כל המשתנים כן נכנסים בצורה לינארית 
+# generalize additive model in R 
+# הפלט של המודל הזה יהיה בטא לכל משתנה ועבור הזמן לידה יהיה לנו מן קו שבור שאומר מה האודס רשיו לפי הזמן לידה 
+# לעשות רגרסיה לוגיסטית עם המשתנים שלא נמדדו לאורך זמן בשנה הראשונה 
+# ולהכניס פעם אחת בקבוצות של זמן ופעם אחת בצורה של ספלינס או איזשהי צורה גמישה שנותנת מודל א- פרמטרי 
+# אפשר לחזור על אותו דבר עם מודל לשנה השנייה 
+
+# לעשות שתי רגרסיות לוגיסטיות אחת רגילה ואחת עם ספלינס 
+
+```
+
+
 
