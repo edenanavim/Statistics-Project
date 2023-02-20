@@ -123,6 +123,7 @@ df <- df %>% mutate(
         family_Allergic_rhinitis = ifelse(mother_Allergic_rhinitis + father_Allergic_rhinitis + sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis >0,1,0),
         family_FA = ifelse(mother_food_allergy + father_food_allergy + sibling1_food_allergy + sibling2_food_allergy + sibling3_food_allergy + sibling4_food_allergy >0,1,0))
 
+df$DOB_cont = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
 
 # at this moment there is no sutible data from group 4 - post corona 
 attach(df)
@@ -189,13 +190,13 @@ chisq_goodness <- function(kpi){
   return(list('p_val'=t$p.value, 'SRM'= t$p.value < alpha))} 
 
 
-sapply(binari_exp, chisq_goodness, simplify =FALSE)
-sapply(discrite_exp, chisq_goodness, simplify =FALSE)
-sapply(categoric_exp, chisq_goodness, simplify =FALSE)
-sapply(exploreatory_variables, chisq_goodness, simplify =FALSE)
+# sapply(binari_exp, chisq_goodness, simplify =FALSE)
+# sapply(discrite_exp, chisq_goodness, simplify =FALSE)
+# sapply(categoric_exp, chisq_goodness, simplify =FALSE)
+# sapply(exploreatory_variables, chisq_goodness, simplify =FALSE)
 ```
 
-# Analyze after meeting with micha : 
+# Logistic regression: 
 ```{r}
 explanatory_kpi = c('Jew/Arab', 'gender', 'Allergy_total','vaccine_12mo', 'prevention_therapy',
                 'family_Atopic_diseases', 'mother_Atopic_diseases', 'father_Atopic_diseases', 'sibling_Atopic_diseases', 
@@ -203,49 +204,68 @@ explanatory_kpi = c('Jew/Arab', 'gender', 'Allergy_total','vaccine_12mo', 'preve
                 'SES', 'number_of_children', 'preganancy_number', 'number_of_ABX_first_year', 'number_inhalation',
                 'family_Atopic_diseases_sum', 'mother_Atopic_diseases_sum', 'father_Atopic_diseases_sum', 'sibling_Atopic_diseases_sum',
                 'sibling_asthma_sum', 'sibling_AD_sum', 'sibling_Allergic_rhinitis_sum', 'sibling_FA_sum',
-                'type_of_pregnancy', 'nursing_setup_at_12mo', 'covid_time')
+                'type_of_pregnancy', 'nursing_setup_at_12mo', 'covid_time', 'DOB_cont')
 
-mdl1 <- glm(is_atopic_first_year~ `Jew/Arab` + gender + Allergy_total + prevention_therapy + 
-             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
-             type_of_pregnancy + covid_time, data = df, family = "binomial")
+
+# The input needs to be checked after talking to Idit 
+mdl1 <- glm(is_atopic_first_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy + DOB_cont  , data = df, family = "binomial")
 summary(mdl1)
 
-mdl2 <- glm(is_atopic_second_year~ `Jew/Arab` + gender + Allergy_total + vaccine_12mo + prevention_therapy + 
-             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
-             number_of_ABX_first_year + number_inhalation + type_of_pregnancy + nursing_setup_at_12mo + covid_time, data = df, family = "binomial")
+
+# cor(cbind(`Jew/Arab`, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, mother_year_birth,
+#     mother_education, number_of_children, type_of_pregnancy, DOB_cont), use = "pairwise.complete.obs")
+
+
+mdl2 <- glm(is_atopic_second_year ~ SES + gender + vaccine_12mo + 
+             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + mother_education + number_of_children +
+             type_of_pregnancy + nursing_setup_at_12mo + is_atopic_first_year + DOB_cont, data = df, family = "binomial")
 summary(mdl2)
 
-mod_gam1 = gam(is_atopic_first_year ~  gender + Allergy_total + prevention_therapy + 
-             family_Atopic_diseases + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + DOB + mother_education + SES + number_of_children + preganancy_number + 
-             type_of_pregnancy + s(date_of_birth, bs = "cr"), data = df)
-summary(mod_gam1)
-plot(mod_gam1)
+# cor(cbind(`Jew/Arab`, gender, vaccine_12mo, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
+#           mother_year_birth, mother_education, number_of_children,  
+#           type_of_pregnancy, nursing_setup_at_12mo, is_atopic_first_year, DOB_cont), use = "pairwise.complete.obs")
+```
 
-df$date_of_birth = as.numeric(as.Date('2018-01-14'))/ as.numeric(as.Date(df$DOB)) 
+# Splines regression : 
+```{r}
+g1 <- as.numeric(as.Date("2019-03-01")) - min(as.numeric(as.Date(df$DOB)))
+g2 <- as.numeric(as.Date("2020-03-11")) - min(as.numeric(as.Date(df$DOB)))
+g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
 
 
+# mdl_gam1 = gam(is_atopic_first_year ~ SES + gender + 
+#              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+#              mother_year_birth + mother_education + number_of_children + 
+#              type_of_pregnancy + s(DOB_cont, bs = "cr"), data = df)
+# summary(mdl_gam1)
+# plot(mdl_gam1)
+
+
+library(splines)
+mdl_gam1 <- glm(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + ns(DOB_cont, knots = c(g1,g2)) ,data=df, family = 'binomial')
+
+summary(mdl_gam1)
+plot(mdl_gam1)
+# proba<-predict(class,newdata=data.frame(age=18:80),type=’response’)
 
 ```
 
-# Logistic regression after finding SRM 
+
+
+
+
+
+
+
+# Logistic regression after finding SRM - Not relevant for now
 ```{r}
-SRM_kpi = c('vaccine_12mo ', 'number_of_ABX_first_year', 'type_of_pregnancy', 'nursing_setup_at_12mo')
+# סיכום פגישה עם מיכה 
 
-
-mdl1 <- glm(is_atopic_first_year~  type_of_pregnancy + covid_time, data = df, family = "binomial")
-summary(mdl1)
-
-mdl2 <- glm(is_atopic_second_year~ vaccine_12mo + number_of_ABX_first_year  + type_of_pregnancy+ nursing_setup_at_12mo + is_atopic_first_year + covid_time, data = df, family = "binomial")
-summary(mdl2)
-
-# data = df %>% group_by(covid_time) %>% summarise(is_atopic_first_year = sum(is_atopic_first_year), is_atopic_second_year = sum(is_atopic_second_year, na.rm = T), n = n_distinct(record_id))
-# data$prop1 = data$is_atopic_first_year / data$n
-# data$prop2 = data$is_atopic_second_year / data$n
-# 
-# data
 
 
 # Splines 
