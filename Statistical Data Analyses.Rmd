@@ -22,8 +22,8 @@ options(scipen=5, digits = 5)
 ```{r}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
     
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -247,11 +247,14 @@ g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
 
 library(splines)
 mdl_gam1 <- glm(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + ns(DOB_cont, knots = c(g1,g2)) ,data=df, family = 'binomial')
+             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + bs(DOB_cont, knots = c(g1,g2)) ,data=df %>% drop_na(), family = 'binomial')
 
+backstep = step(mdl_gam1) # Backwards selection is the default
+summary(backstep)
 summary(mdl_gam1)
 plot(mdl_gam1)
 # proba<-predict(class,newdata=data.frame(age=18:80),type=’response’)
+
 
 ```
 
