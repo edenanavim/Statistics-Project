@@ -130,19 +130,19 @@ df$DOB_cont = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
 
 
 # df change to factors 
-df$SES <- as.factor(df$SES)
-df$`Jew/Arab` <- as.factor(df$`Jew/Arab`)
-df$gender <- as.factor(df$gender)
-df$study_group_COMEET <- as.factor(df$study_group_COMEET)
-df$mother_education <- as.factor(df$mother_education)
-df$number_of_children <- as.factor(df$number_of_children)
-df$preganancy_number <- as.factor(df$preganancy_number)
-df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
-df$family_Atopic_diseases <- as.factor(df$family_Atopic_diseases)
-df$sibling_Atopic_diseases <- as.factor(df$sibling_Atopic_diseases)
-df$mother_Atopic_diseases <- as.factor(df$mother_Atopic_diseases)
-df$father_Atopic_diseases <- as.factor(df$father_Atopic_diseases)
-df$SES <- as.factor(df$SES)
+# df$SES <- as.factor(df$SES)
+# df$`Jew/Arab` <- as.factor(df$`Jew/Arab`)
+# df$gender <- as.factor(df$gender)
+# df$study_group_COMEET <- as.factor(df$study_group_COMEET)
+# df$mother_education <- as.factor(df$mother_education)
+# df$number_of_children <- as.factor(df$number_of_children)
+# df$preganancy_number <- as.factor(df$preganancy_number)
+# df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
+# df$family_Atopic_diseases <- as.factor(df$family_Atopic_diseases)
+# df$sibling_Atopic_diseases <- as.factor(df$sibling_Atopic_diseases)
+# df$mother_Atopic_diseases <- as.factor(df$mother_Atopic_diseases)
+# df$father_Atopic_diseases <- as.factor(df$father_Atopic_diseases)
+# df$SES <- as.factor(df$SES)
 ```
 
 # arrange all the colnames by type
@@ -225,7 +225,7 @@ explanatory_kpi = c('Jew/Arab', 'gender', 'Allergy_total','vaccine_12mo', 'preve
 
 # The input needs to be checked after talking to Idit 
 mdl1 <- glm(is_atopic_first_year~ SES + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_Atopic_diseases + father_Atopic_diseases + 
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy + DOB_cont  , data = df, family = "binomial")
 summary(mdl1)
@@ -274,10 +274,16 @@ library(Matrix)
 library(lme4)
 
 
-gam_mdl <- gam(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases +
-                 sibling_Atopic_diseases + mother_year_birth + mother_education + number_of_children +
-                 type_of_pregnancy + s(DOB_cont, bs='cr', k=4) ,data=df, family=binomial)
+gam_mdl <- gam(is_atopic_first_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases +
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
+plot(gam_mdl)
 summary(gam_mdl)
+g1
+g2
+g3
+cor(is_atopic_second_year, is_atopic_first_year, )
 ```
 
 
