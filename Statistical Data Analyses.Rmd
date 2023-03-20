@@ -21,9 +21,9 @@ options(scipen=5, digits = 5)
 # Prepare the data to analysis 
 ```{r}
 # Reading the file:
-# dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
-#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_3.1.23.xlsx"
+# dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
     
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -114,7 +114,7 @@ group1 <- as.Date("2019-03-01")
 group2 <- as.Date("2020-03-11")
 group3 <- as.Date("2021-02-07")
 df <- df %>% mutate(covid_time = ifelse(DOB < group1, 1, ifelse(DOB < group2, 2, ifelse(DOB<group3, 3, 4))))
-table(df$covid_time)
+# table(df$covid_time)
 df <- df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
 
 df <- df %>% mutate(
@@ -126,7 +126,23 @@ df <- df %>% mutate(
 df$DOB_cont = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
 
 # at this moment there is no sutible data from group 4 - post corona 
-attach(df)
+# attach(df)
+
+
+# df change to factors 
+df$SES <- as.factor(df$SES)
+df$`Jew/Arab` <- as.factor(df$`Jew/Arab`)
+df$gender <- as.factor(df$gender)
+df$study_group_COMEET <- as.factor(df$study_group_COMEET)
+df$mother_education <- as.factor(df$mother_education)
+df$number_of_children <- as.factor(df$number_of_children)
+df$preganancy_number <- as.factor(df$preganancy_number)
+df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
+df$family_Atopic_diseases <- as.factor(df$family_Atopic_diseases)
+df$sibling_Atopic_diseases <- as.factor(df$sibling_Atopic_diseases)
+df$mother_Atopic_diseases <- as.factor(df$mother_Atopic_diseases)
+df$father_Atopic_diseases <- as.factor(df$father_Atopic_diseases)
+df$SES <- as.factor(df$SES)
 ```
 
 # arrange all the colnames by type
@@ -232,33 +248,37 @@ summary(mdl2)
 
 # Splines regression : 
 ```{r}
+library(splines)
+
 g1 <- as.numeric(as.Date("2019-03-01")) - min(as.numeric(as.Date(df$DOB)))
 g2 <- as.numeric(as.Date("2020-03-11")) - min(as.numeric(as.Date(df$DOB)))
 g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
 
-
-# mdl_gam1 = gam(is_atopic_first_year ~ SES + gender + 
-#              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-#              mother_year_birth + mother_education + number_of_children + 
-#              type_of_pregnancy + s(DOB_cont, bs = "cr"), data = df)
-# summary(mdl_gam1)
-# plot(mdl_gam1)
-
-
-library(splines)
 mdl_gam1 <- glm(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + bs(DOB_cont, knots = c(g1,g2)) ,data=df %>% drop_na(), family = 'binomial')
+             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + ns(DOB_cont, knots = c(g1,g2,g3)) ,data=df %>% drop_na(), family = 'binomial')
+summary(mdl_gam1)
 
 backstep = step(mdl_gam1) # Backwards selection is the default
 summary(backstep)
-summary(mdl_gam1)
 plot(mdl_gam1)
 # proba<-predict(class,newdata=data.frame(age=18:80),type=’response’)
-
-
 ```
 
 
+```{r}
+# try to fit generalize additive model
+library(nlme)
+library(mgcv)
+library(dplyr)
+library(Matrix)
+library(lme4)
+
+
+gam_mdl <- gam(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases +
+                 sibling_Atopic_diseases + mother_year_birth + mother_education + number_of_children +
+                 type_of_pregnancy + s(DOB_cont, bs='cr', k=4) ,data=df, family=binomial)
+summary(gam_mdl)
+```
 
 
 
@@ -288,4 +308,7 @@ plot(mdl_gam1)
 ```
 
 
+```{r}
+
+```
 
