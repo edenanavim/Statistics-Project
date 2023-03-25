@@ -54,7 +54,7 @@ df$mother_Atopic_diseases_sum <- rowSums(df[,14:17])
 df$father_Atopic_diseases_sum <- rowSums(df[,18:21])
 df$sibling_Atopic_diseases_sum <- rowSums(df[,22:37])
 
-# Sibilings
+# Siblings
 df <- df %>% mutate(sibling_asthma_sum = sibling1_asthma + sibling2_asthma + sibling3_asthma + sibling4_asthma,
                     sibling_AD_sum = sibling1_atopic_dermatitis + sibling2_atopic_dermatitis + sibling3_atopic_dermatitis + sibling4_atopic_dermatitis,
                     sibling_Allergic_rhinitis_sum = sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis,
@@ -99,53 +99,62 @@ df$FA_second_year <-  df$food_allergy_24_month
 df$AD_second_year <- df$AD_24_month
 df$HRAD_second_year <- df$inhalation_24_month
 df$ABX_second_year <- df$ABX_treatment_24_months
+df$feeding_type <- df$study_group_COMEET
+
 
 #option A of explanatory var:
 df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year + ABX_fisrt_year + HRAD_first_year)>0,1,0), 
                     is_atopic_second_year = ifelse((AD_24_month + FA_second_year + ABX_second_year + HRAD_second_year)>0,1,0))
 
-#option B of explanatory var:
-#From mail
-
 #Choosing explanatory variables: Ones that have a sufficient number of observation before and after Corona
 #The distribution of observations according to the timeline of the corona. Before the corona = 1, the first six months of the corona = 2  and after = 3:
-
 group1 <- as.Date("2019-03-01")
 group2 <- as.Date("2020-03-11")
 group3 <- as.Date("2021-02-07")
 df <- df %>% mutate(covid_time = ifelse(DOB < group1, 1, ifelse(DOB < group2, 2, ifelse(DOB<group3, 3, 4))))
-# table(df$covid_time)
 df <- df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
+
 
 df <- df %>% mutate(
         family_asthma = ifelse(mother_asthma + father_asthma + sibling1_asthma + sibling2_asthma + sibling3_asthma + sibling4_asthma >0,1,0),
         family_AD = ifelse(mother_atopic_dermatitis + father_atopic_dermatitis + sibling1_atopic_dermatitis + sibling2_atopic_dermatitis + sibling3_atopic_dermatitis + sibling4_atopic_dermatitis >0,1,0),
         family_Allergic_rhinitis = ifelse(mother_Allergic_rhinitis + father_Allergic_rhinitis + sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis >0,1,0),
         family_FA = ifelse(mother_food_allergy + father_food_allergy + sibling1_food_allergy + sibling2_food_allergy + sibling3_food_allergy + sibling4_food_allergy >0,1,0))
-
 df$DOB_cont = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
 
+# create a category SES variable :
+df <- df %>% mutate(SES_group = ifelse(SES>8, '9-10', ifelse(SES>5, '6-8', ifelse(SES>2, '3-5', '1-2'))))
+
 # at this moment there is no sutible data from group 4 - post corona 
-# attach(df)
-
-
-# df change to factors 
-# df$SES <- as.factor(df$SES)
-# df$`Jew/Arab` <- as.factor(df$`Jew/Arab`)
-# df$gender <- as.factor(df$gender)
-# df$study_group_COMEET <- as.factor(df$study_group_COMEET)
-# df$mother_education <- as.factor(df$mother_education)
-# df$number_of_children <- as.factor(df$number_of_children)
-# df$preganancy_number <- as.factor(df$preganancy_number)
-# df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
-# df$family_Atopic_diseases <- as.factor(df$family_Atopic_diseases)
-# df$sibling_Atopic_diseases <- as.factor(df$sibling_Atopic_diseases)
-# df$mother_Atopic_diseases <- as.factor(df$mother_Atopic_diseases)
-# df$father_Atopic_diseases <- as.factor(df$father_Atopic_diseases)
-# df$SES <- as.factor(df$SES)
+attach(df)
 ```
 
-# arrange all the colnames by type
+
+# Descriptive statistics :
+```{r}
+n_obs = length(record_id)
+n_atopic1 = sum(is_atopic_first_year)
+n_atopic2 = sum(is_atopic_second_year, na.rm = T)
+
+
+exp_var1 <- df %>% select(c(SES_group, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases,
+             mother_education, number_of_children, type_of_pregnancy, covid_time))
+exp_var2 <- df %>% select(c(SES, gender, vaccine_12mo, feeding_type, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
+             mother_education, number_of_children, type_of_pregnancy, nursing_setup_at_12mo, covid_time))
+
+tablelist1 <- mapply(table, exp_var1)
+tablelist2 <- mapply(table, exp_var2)
+
+covid_time_prop <- round(tablelist1[['covid_time']] / sum(tablelist1[['covid_time']]),2)
+
+
+
+boxplot(number_of_children, is_atopic_first_year)
+
+
+
+```
+# arrange all the colnames by type for more calculation below 
 ```{r}
 # MASBIR
 full_binari_exp <- c('Jew/Arab', 'gender', 'Allergy_total', 
@@ -175,15 +184,6 @@ exploreatory_variables <- c('HRAD_first_year', 'AD_first_year', 'FA_first_year',
                             'HRAD_second_year', 'AD_second_year', 'FA_second_year', 'ABX_second_year',
                             'is_atopic_first_year', 'is_atopic_second_year') 
 ```
-
-
-# Data Analyses
-```{r}
-tablelist <- mapply(table, df %>% select(-c(record_id, DOB, mother_year_birth)))
-covid_time_prop <- round(tablelist[['covid_time']] / sum(tablelist[['covid_time']]),2)
-```
-
-
 # Two dim table - covid time VS each column 
 ```{r}
 covid_time_table <- function(kpi){
@@ -212,33 +212,19 @@ chisq_goodness <- function(kpi){
 # sapply(exploreatory_variables, chisq_goodness, simplify =FALSE)
 ```
 
-# Logistic regression: 
+# normal Logistic regression: 
 ```{r}
-explanatory_kpi = c('Jew/Arab', 'gender', 'Allergy_total','vaccine_12mo', 'prevention_therapy',
-                'family_Atopic_diseases', 'mother_Atopic_diseases', 'father_Atopic_diseases', 'sibling_Atopic_diseases', 
-                'mother_year_birth', 'DOB', 'mother_education',
-                'SES', 'number_of_children', 'preganancy_number', 'number_of_ABX_first_year', 'number_inhalation',
-                'family_Atopic_diseases_sum', 'mother_Atopic_diseases_sum', 'father_Atopic_diseases_sum', 'sibling_Atopic_diseases_sum',
-                'sibling_asthma_sum', 'sibling_AD_sum', 'sibling_Allergic_rhinitis_sum', 'sibling_FA_sum',
-                'type_of_pregnancy', 'nursing_setup_at_12mo', 'covid_time', 'DOB_cont')
-
-
 # The input needs to be checked after talking to Idit 
-mdl1 <- glm(is_atopic_first_year~ SES + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy + DOB_cont  , data = df, family = "binomial")
+mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + mother_Atopic_diseases + father_Atopic_diseases + # + sibling_Atopic_diseases
+             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + DOB  , data = df, family = "binomial")
 summary(mdl1)
-
 
 # cor(cbind(`Jew/Arab`, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, mother_year_birth,
 #     mother_education, number_of_children, type_of_pregnancy, DOB_cont), use = "pairwise.complete.obs")
 
-
-mdl2 <- glm(is_atopic_second_year ~ SES + gender + vaccine_12mo + 
-             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children +
-             type_of_pregnancy + nursing_setup_at_12mo + is_atopic_first_year + DOB_cont, data = df, family = "binomial")
+mdl2 <- glm(is_atopic_second_year ~ SES + gender + vaccine_12mo + feeding_type + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + nursing_setup_at_12mo + is_atopic_first_year + DOB, 
+            data = df, family = "binomial")
 summary(mdl2)
 
 # cor(cbind(`Jew/Arab`, gender, vaccine_12mo, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
@@ -264,7 +250,7 @@ plot(mdl_gam1)
 # proba<-predict(class,newdata=data.frame(age=18:80),type=’response’)
 ```
 
-
+# GAM : 
 ```{r}
 # try to fit generalize additive model
 library(nlme)
@@ -273,8 +259,7 @@ library(dplyr)
 library(Matrix)
 library(lme4)
 
-
-gam_mdl <- gam(is_atopic_first_year~ SES + gender + 
+gam_mdl <- gam(is_atopic_first_year~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
