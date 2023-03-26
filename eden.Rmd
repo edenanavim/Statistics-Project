@@ -1,0 +1,70 @@
+```{r}
+
+arranged_df <- df %>% arrange(DOB) %>% select(DOB,DOB_cont,covid_time)
+
+
+# try to fit generalize additive model
+library(nlme)
+library(mgcv)
+library(dplyr)
+library(Matrix)
+library(lme4)
+
+
+gam_mdl <- gam(is_atopic_first_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases +
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
+plot(gam_mdl,main = "Atopian disease in the first year")
+abline(v=c(409,786,1118),col="red")
+abline(h=0, col="blue")
+summary(gam_mdl)
+# g1
+# g2
+# g3
+# cor(is_atopic_second_year, is_atopic_first_year, )
+
+gam_mdl_with_sib <- gam(is_atopic_first_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases + + sibling_Atopic_diseases+
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
+plot(gam_mdl_with_sib,main = "Atopian disease in the first year (with sibilings)")
+abline(v=c(409,786,1118),col="red")
+abline(h=0, col="blue")
+summary(gam_mdl_with_sib)
+
+
+gam_md2 <- gam(is_atopic_second_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases +
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_cont, bs='cr') ,data=df, family=binomial)
+plot(gam_md2,main = "Atopian disease in the second year")
+abline(v=c(409,786,1118),col="red")
+abline(h=0, col="blue")
+summary(gam_md2)
+
+gam_md2_with_sib <- gam(is_atopic_second_year~ SES + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases +
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_cont, bs='cr') ,data=df, family=binomial)
+plot(gam_md2_with_sib,main = "Atopian disease in the second year (with sibilings)")
+abline(v=c(409,786,1118),col="red")
+abline(h=0, col="blue")
+summary(gam_md2_with_sib )
+colnames(df)
+```
+
+statistical description:
+```{r}
+table(covid_time)
+
+covid_time_prop
+
+table(covid_time,is_atopic_first_year)
+
+table(covid_time,is_atopic_second_year)
+
+summary(number_of_children)
+
+table(number_of_children, sibling_Atopic_diseases)
+```
