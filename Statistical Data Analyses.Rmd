@@ -14,12 +14,17 @@ library(tidyr)
 library(reshape)
 library(glue)
 library(mgcv)
+library(nlme)
+library(Matrix)
+library(lme4)
+library(wesanderson)
+library(viridis)
 
 options(scipen=5, digits = 5)
 ```
 
 # Prepare the data to analysis 
-```{r}
+```{r, message=F, warning=F, error=F}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
@@ -28,42 +33,32 @@ dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_f
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
-# Arranging df:
-# Filtering only participants that completed the survey:
-df <- df %>% filter(is.na(lost_of_followup))
-# Filtering only participants that completed the second year:
-df <- df %>% filter(month_survey_complete == 2)
+df <- df %>% filter(is.na(lost_of_followup))# Filtering only participants that completed the survey
+df <- df %>% filter(month_survey_complete == 2) # Filtering only participants that completed the second year
+df <- df[,-c(51:88)]# Removing non relevant columns: from type_of_allergy to 12_month_FA_type_allergy
 
-# Removing non relevant columns: from type_of_allergy to 12_month_FA_type_allergy
-#remove_columns = colnames(df)[51:88]
-df <- df[,-c(51:88)]
-
-# Removing columns with allot on NA:
 not_relevant <- c('allergist_followup', 'last_spt', 'epipen', 'mistake_exposure', 'reaction_type24', 'diagnosis_by', 'lost_of_followup',"mother_no_comorbidities","mother_other","father_no_comorbidities","father_other","sibling1_other","sibling1_no_comorbidities","sibling2_other","sibling2_no_comorbidities","sibling3_other","sibling3_no_comorbidities","sibling4_other","sibling4_no_comorbidities")
-df <- df[-which(colnames(df) %in% not_relevant)]
+df <- df[-which(colnames(df) %in% not_relevant)] # Removing columns with alot on NA:
 
 # Adding binary columns 
-# A. Did any one from family (mother, father, sib) have *any* of the disease?
-df$family_Atopic_diseases_sum <- rowSums(df[,14:37])
-
-# B. Did somebody from family have a specific disease?
-# NEED TO FILL IN
-
-# C. Did a disease appear in a specific family member?
-df$mother_Atopic_diseases_sum <- rowSums(df[,14:17])
+df$family_Atopic_diseases_sum <- rowSums(df[,14:37]) # Did any one from family (mother, father, sib) have *any* of the disease?
+df$mother_Atopic_diseases_sum <- rowSums(df[,14:17]) # Did a disease appear in a specific family member?
 df$father_Atopic_diseases_sum <- rowSums(df[,18:21])
 df$sibling_Atopic_diseases_sum <- rowSums(df[,22:37])
+# df = df %>% mutate(sibling_Atopic_diseases_sum = ifelse(number_of_children ==0, NA, sibling_Atopic_diseases_sum)) # inseret NA to sibiling atopic disease when there is no Sibilings 
 
-# Siblings
+# Sum each disease 
 df <- df %>% mutate(sibling_asthma_sum = sibling1_asthma + sibling2_asthma + sibling3_asthma + sibling4_asthma,
                     sibling_AD_sum = sibling1_atopic_dermatitis + sibling2_atopic_dermatitis + sibling3_atopic_dermatitis + sibling4_atopic_dermatitis,
-                    sibling_Allergic_rhinitis_sum = sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis,
+           sibling_Allergic_rhinitis_sum = sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis,
                     sibling_FA_sum = sibling1_food_allergy + sibling2_food_allergy + sibling3_food_allergy + sibling4_food_allergy)
               
+# Binary variable for each family member 
 df <- df %>% mutate(family_Atopic_diseases = ifelse(family_Atopic_diseases_sum >0,1,0),
                     mother_Atopic_diseases = ifelse(mother_Atopic_diseases_sum>0,1,0),
                     father_Atopic_diseases = ifelse(father_Atopic_diseases_sum > 0, 1,0),
                     sibling_Atopic_diseases = ifelse(sibling_Atopic_diseases_sum > 0 ,1, 0))
+
 
 # Changing to binary variables:
 df$gender[df$gender == 2] <- 0
@@ -81,26 +76,23 @@ df$type_of_pregnancy[df$type_of_pregnancy == 2] <- 0
 #Changing NA to 0 for 
 df$number_ABX_treatment_24_months<- replace(df$number_ABX_treatment_24_months, is.na(df$number_ABX_treatment_24_months), 0)
 df$hospitalization_24_months<- replace(df$hospitalization_24_months, is.na(df$hospitalization_24_months), 0)
-
 df$prevention_therapy<- replace(df$prevention_therapy, is.na(df$prevention_therapy), 0)
 df$number_inhalation<- replace(df$number_inhalation, is.na(df$number_inhalation), 0)
-
 df$AD_treatment_24_month<- replace(df$AD_treatment_24_month, is.na(df$AD_treatment_24_month), 0)
 df$steroids_treatment24<- replace(df$steroids_treatment24, is.na(df$steroids_treatment24), 0)
 df$number_steroid_treat<- replace(df$number_steroid_treat
 , is.na(df$number_steroid_treat), 0)
-
 df$number_of_ABX_first_year<- replace(df$number_of_ABX_first_year, is.na(df$number_of_ABX_first_year), 0)
-
 df <- df %>% drop_na(AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_24_month, inhalation_24_month, AD_24_month) 
 
-#Creating dependent variables:
+df <- df %>% mutate(SES_group = ifelse(SES>8, '9-10', ifelse(SES>5, '6-8', ifelse(SES>2, '3-5', '1-2'))))# create a category SES variable :
+
+#Creating dependent variables with the correct name 
 df$FA_second_year <-  df$food_allergy_24_month
 df$AD_second_year <- df$AD_24_month
 df$HRAD_second_year <- df$inhalation_24_month
 df$ABX_second_year <- df$ABX_treatment_24_months
 df$feeding_type <- df$study_group_COMEET
-
 
 #option A of explanatory var:
 df <- df %>% mutate(is_atopic_first_year = ifelse((AD_first_year + FA_first_year + ABX_fisrt_year + HRAD_first_year)>0,1,0), 
@@ -114,28 +106,66 @@ group3 <- as.Date("2021-02-07")
 df <- df %>% mutate(covid_time = ifelse(DOB < group1, 1, ifelse(DOB < group2, 2, ifelse(DOB<group3, 3, 4))))
 df <- df %>% mutate(Born_at = ifelse(covid_time == 1, 'Up to March19', ifelse(covid_time == 2, 'March19 - March20', 'March20 - Feb21')))
 
-
 df <- df %>% mutate(
         family_asthma = ifelse(mother_asthma + father_asthma + sibling1_asthma + sibling2_asthma + sibling3_asthma + sibling4_asthma >0,1,0),
         family_AD = ifelse(mother_atopic_dermatitis + father_atopic_dermatitis + sibling1_atopic_dermatitis + sibling2_atopic_dermatitis + sibling3_atopic_dermatitis + sibling4_atopic_dermatitis >0,1,0),
         family_Allergic_rhinitis = ifelse(mother_Allergic_rhinitis + father_Allergic_rhinitis + sibling1_Allergic_rhinitis + sibling2_Allergic_rhinitis + sibling3_Allergic_rhinitis + sibling4_Allergic_rhinitis >0,1,0),
         family_FA = ifelse(mother_food_allergy + father_food_allergy + sibling1_food_allergy + sibling2_food_allergy + sibling3_food_allergy + sibling4_food_allergy >0,1,0))
-df$DOB_cont = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
+df$DOB_count = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
+ 
+# Change categorical variable to factors 
+df$feeding_type <- as.factor(df$feeding_type)
+df$mother_education <- as.factor(df$mother_education)
+df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
+df$nursing_setup_at_12mo <- as.factor(df$nursing_setup_at_12mo)
+df$covid_time <- as.factor(df$covid_time)
 
-# create a category SES variable :
-df <- df %>% mutate(SES_group = ifelse(SES>8, '9-10', ifelse(SES>5, '6-8', ifelse(SES>2, '3-5', '1-2'))))
 
-# at this moment there is no sutible data from group 4 - post corona 
+df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
 attach(df)
+```
+
+# Sibilings 
+```{r}
+# insert NA to siblings atopic disease when there is no siblings
+df_sib = df %>% mutate(sibling_Atopic_diseases_sum = ifelse(number_of_children ==0, NA, sibling_Atopic_diseases_sum)) 
+
+# Check diff between babies with / without siblings 
+sibilings_df <- df_sib %>% select(record_id, number_of_children, is_atopic_first_year, is_atopic_second_year, sibling_Atopic_diseases_sum) %>% 
+  mutate(have_siblings = ifelse(number_of_children >0, 1, 0), sibling_Atopic_diseases = ifelse(sibling_Atopic_diseases_sum>0,1,0)) 
+
+sib_group <- sibilings_df %>% group_by(have_siblings) %>%  summarise(n = n(), is_atopic_first_year = sum(is_atopic_first_year), is_atopic_second_year = sum(is_atopic_second_year, na.rm=T))
+
+sib_group$is_atopic_first_year_perc = sib_group$is_atopic_first_year / sib_group$n
+sib_group$is_atopic_second_year_perc = sib_group$is_atopic_second_year / sib_group$n
+sib_group
+
+# check diff of sick siblings between is_atopic
+is_atopic_df1 <- sibilings_df %>% group_by(is_atopic_first_year) %>%  summarise(n = n(), sibling_Atopic_diseases = sum(sibling_Atopic_diseases, na.rm=T), .groups='drop')
+is_atopic_df1$perc = is_atopic_df1$sibling_Atopic_diseases/ is_atopic_df1$n
+is_atopic_df1
+
+
+is_atopic_df2 <- sibilings_df %>% group_by(is_atopic_second_year) %>%  summarise(n = n(), sibling_Atopic_diseases = sum(sibling_Atopic_diseases, na.rm=T), .groups='drop')
+is_atopic_df2$perc = is_atopic_df2$sibling_Atopic_diseases/ is_atopic_df2$n
+is_atopic_df2
+
+# Find correlation between atopic disease to sick siblings
+cor(sibilings_df$sibling_Atopic_diseases, sibilings_df$is_atopic_first_year, use = "pairwise.complete.obs")
+cor(sibilings_df$sibling_Atopic_diseases, sibilings_df$is_atopic_second_year, use = "pairwise.complete.obs")
+
+
+### conclusion - it seems like the connection between the two variables is very week, 
+### in addition the results at the models below with or without siblings are similar, in my opinion (Shahar) we can skip this variable. 
 ```
 
 
 # Descriptive statistics :
 ```{r}
+# SHAHAR
 n_obs = length(record_id)
 n_atopic1 = sum(is_atopic_first_year)
 n_atopic2 = sum(is_atopic_second_year, na.rm = T)
-
 
 exp_var1 <- df %>% select(c(SES_group, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases,
              mother_education, number_of_children, type_of_pregnancy, covid_time))
@@ -147,12 +177,20 @@ tablelist2 <- mapply(table, exp_var2)
 
 covid_time_prop <- round(tablelist1[['covid_time']] / sum(tablelist1[['covid_time']]),2)
 
-
-
 boxplot(number_of_children, is_atopic_first_year)
 
+# EDEN 
+table(covid_time)
 
+covid_time_prop
 
+table(covid_time,is_atopic_first_year)
+
+table(covid_time,is_atopic_second_year)
+
+summary(number_of_children)
+
+table(number_of_children, sibling_Atopic_diseases)
 ```
 # arrange all the colnames by type for more calculation below 
 ```{r}
@@ -183,7 +221,15 @@ categoric_exp <- c('type_of_pregnancy', 'nursing_setup_at_12mo', 'covid_time')
 exploreatory_variables <- c('HRAD_first_year', 'AD_first_year', 'FA_first_year', 'ABX_fisrt_year',
                             'HRAD_second_year', 'AD_second_year', 'FA_second_year', 'ABX_second_year',
                             'is_atopic_first_year', 'is_atopic_second_year') 
+
+
+g1 <- as.numeric(as.Date("2019-03-01")) - min(as.numeric(as.Date(df$DOB)))
+g2 <- as.numeric(as.Date("2020-03-11")) - min(as.numeric(as.Date(df$DOB)))
+g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
+
+arranged_df <- df %>% arrange(DOB) %>% select(DOB,DOB_count,covid_time)
 ```
+
 # Two dim table - covid time VS each column 
 ```{r}
 covid_time_table <- function(kpi){
@@ -197,7 +243,7 @@ sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
 ```
 
 
-# Chi2 test 
+# Chi2 test - checking for AB test - results = Failed ! 
 ```{r, warning=F}
 alpha = 0.01
 chisq_goodness <- function(kpi){
@@ -212,164 +258,95 @@ chisq_goodness <- function(kpi){
 # sapply(exploreatory_variables, chisq_goodness, simplify =FALSE)
 ```
 
-# normal Logistic regression: 
+
+# Regression 
+
+## Logistic regression
 ```{r}
-# The input needs to be checked after talking to Idit 
-mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + mother_Atopic_diseases + father_Atopic_diseases + # + sibling_Atopic_diseases
-             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + DOB  , data = df, family = "binomial")
-summary(mdl1)
+df_mdl <- df %>% drop_na(SES_group, gender, type_of_pregnancy, mother_education, vaccine_12mo, nursing_setup_at_12mo, 
+                         is_atopic_first_year, is_atopic_second_year)
 
-# cor(cbind(`Jew/Arab`, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, mother_year_birth,
-#     mother_education, number_of_children, type_of_pregnancy, DOB_cont), use = "pairwise.complete.obs")
+mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
+               mother_Atopic_diseases + father_Atopic_diseases +
+               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
-mdl2 <- glm(is_atopic_second_year ~ SES + gender + vaccine_12mo + feeding_type + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + nursing_setup_at_12mo + is_atopic_first_year + DOB, 
-            data = df, family = "binomial")
-summary(mdl2)
+mdl1_sib <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
+               mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
-# cor(cbind(`Jew/Arab`, gender, vaccine_12mo, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
-#           mother_year_birth, mother_education, number_of_children,  
-#           type_of_pregnancy, nursing_setup_at_12mo, is_atopic_first_year, DOB_cont), use = "pairwise.complete.obs")
-```
-
-# Splines regression : 
-```{r}
-library(splines)
-
-g1 <- as.numeric(as.Date("2019-03-01")) - min(as.numeric(as.Date(df$DOB)))
-g2 <- as.numeric(as.Date("2020-03-11")) - min(as.numeric(as.Date(df$DOB)))
-g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
-
-mdl_gam1 <- glm(is_atopic_first_year ~ SES + gender + mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + type_of_pregnancy + ns(DOB_cont, knots = c(g1,g2,g3)) ,data=df %>% drop_na(), family = 'binomial')
-summary(mdl_gam1)
-
-backstep = step(mdl_gam1) # Backwards selection is the default
-summary(backstep)
-plot(mdl_gam1)
-# proba<-predict(class,newdata=data.frame(age=18:80),type=’response’)
-```
-
-# GAM : 
-```{r}
-# try to fit generalize additive model
-library(nlme)
-library(mgcv)
-library(dplyr)
-library(Matrix)
-library(lme4)
-
-gam_mdl <- gam(is_atopic_first_year~ SES_group + gender + 
+mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
-plot(gam_mdl)
-summary(gam_mdl)
-g1
-g2
-g3
-cor(is_atopic_second_year, is_atopic_first_year, )
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
+
+mdl2_sib <- glm(is_atopic_second_year ~ SES_group + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
+ 
+
+df_mdl$mdl1 <- mdl1$fitted.values
+df_mdl$mdl1_sib <- mdl1_sib$fitted.values
+df_mdl$mdl2 <- mdl2$fitted.values
+df_mdl$mdl2_sib <- mdl2_sib$fitted.values
+
+df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, na.rm=T), mdl1_sib_avg = mean(mdl1_sib, na.rm=T), 
+                                                          mdl2_avg = mean(mdl2, na.rm=T), mdl2_sib_avg = mean(mdl2_sib, na.rm=T))
+df_mdl <- left_join(df_mdl, df_group, by = 'covid_time')
 ```
 
 
+## GAM : 
 ```{r}
+gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
+               mother_Atopic_diseases + father_Atopic_diseases +
+               mother_year_birth + mother_education + number_of_children +
+               s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-arranged_df <- df %>% arrange(DOB) %>% select(DOB,DOB_cont,covid_time)
+gam1_sib <- gam(is_atopic_first_year~ SES_group + gender + type_of_pregnancy + 
+             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases+
+             mother_year_birth + mother_education + number_of_children + 
+             s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-
-# try to fit generalize additive model
-library(nlme)
-library(mgcv)
-library(dplyr)
-library(Matrix)
-library(lme4)
-
-
-gam_mdl <- gam(is_atopic_first_year~ SES + gender + 
+gam2 <- gam(is_atopic_second_year~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
-plot(gam_mdl,main = "Atopian disease in the first year")
-abline(v=c(409,786,1118),col="red")
-abline(h=0, col="blue")
-summary(gam_mdl)
-# g1
-# g2
-# g3
-# cor(is_atopic_second_year, is_atopic_first_year, )
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-gam_mdl_with_sib <- gam(is_atopic_first_year~ SES + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases + + sibling_Atopic_diseases+
-             mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + s(DOB_cont, bs='cr') ,data=df, family=binomial)
-plot(gam_mdl_with_sib,main = "Atopian disease in the first year (with sibilings)")
-abline(v=c(409,786,1118),col="red")
-abline(h=0, col="blue")
-summary(gam_mdl_with_sib)
-
-
-gam_md2 <- gam(is_atopic_second_year~ SES + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases +
-             mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_cont, bs='cr') ,data=df, family=binomial)
-plot(gam_md2,main = "Atopian disease in the second year")
-abline(v=c(409,786,1118),col="red")
-abline(h=0, col="blue")
-summary(gam_md2)
-
-gam_md2_with_sib <- gam(is_atopic_second_year~ SES + gender + 
+gam2_sib <- gam(is_atopic_second_year~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_cont, bs='cr') ,data=df, family=binomial)
-plot(gam_md2_with_sib,main = "Atopian disease in the second year (with sibilings)")
-abline(v=c(409,786,1118),col="red")
-abline(h=0, col="blue")
-summary(gam_md2_with_sib )
-colnames(df)
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+df_mdl$gam1 <- gam1$fitted.values
+df_mdl$gam1_sib <- gam1_sib$fitted.values
+df_mdl$gam2 <- gam2$fitted.values
+df_mdl$gam2_sib <- gam2_sib$fitted.values
 ```
 
-statistical description:
-```{r}
-table(covid_time)
+## Create Graphs 
+```{r, error=F, warning=F, message=F}
+design = theme_bw() 
 
-covid_time_prop
 
-table(covid_time,is_atopic_first_year)
+# First year - No Sibilings
+ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
 
-table(covid_time,is_atopic_second_year)
+# First year - With Sibilings
+ggplot(df_mdl, aes(DOB, gam1_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_sib_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
 
-summary(number_of_children)
+# Seconde year - No Sibilings
+ggplot(df_mdl, aes(DOB, gam2)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
 
-table(number_of_children, sibling_Atopic_diseases)
+# Seconde year - With Sibilings
+ggplot(df_mdl, aes(DOB, gam2_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_sib_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' )) + ylim(0.5,1)
 ```
 
-
-
-
-# Logistic regression after finding SRM - Not relevant for now
-```{r}
-# סיכום פגישה עם מיכה 
-
-
-
-# Splines 
-# מודל לאי רציפות 
-# במקום להגדיר קבוצה להכניס את המשתנה של זמן בצורה רציפה - כאשר 0 זה התאריך הראשון ו1 זה התאריך האחרון 
-# אם נכניס אותו בצורה רציפה למודל רגרסיה אז אני מקבלת משהו לינארי 
-# נרצה לעשות משהו לא לינארי אז אפשר להכני אותו באיזשהי צורה של ספליינס למודל 
-# כל המשתנים כן נכנסים בצורה לינארית 
-# generalize additive model in R 
-# הפלט של המודל הזה יהיה בטא לכל משתנה ועבור הזמן לידה יהיה לנו מן קו שבור שאומר מה האודס רשיו לפי הזמן לידה 
-# לעשות רגרסיה לוגיסטית עם המשתנים שלא נמדדו לאורך זמן בשנה הראשונה 
-# ולהכניס פעם אחת בקבוצות של זמן ופעם אחת בצורה של ספלינס או איזשהי צורה גמישה שנותנת מודל א- פרמטרי 
-# אפשר לחזור על אותו דבר עם מודל לשנה השנייה 
-
-# לעשות שתי רגרסיות לוגיסטיות אחת רגילה ואחת עם ספלינס 
-
-```
-
-
-```{r}
-
-```
 
