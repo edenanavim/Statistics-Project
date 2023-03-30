@@ -85,7 +85,7 @@ df$number_steroid_treat<- replace(df$number_steroid_treat
 df$number_of_ABX_first_year<- replace(df$number_of_ABX_first_year, is.na(df$number_of_ABX_first_year), 0)
 df <- df %>% drop_na(AD_first_year, FA_first_year, ABX_fisrt_year,food_allergy_24_month, inhalation_24_month, AD_24_month) 
 
-df <- df %>% mutate(SES_group = ifelse(SES>8, '9-10', ifelse(SES>5, '6-8', ifelse(SES>2, '3-5', '1-2'))))# create a category SES variable :
+df <- df %>% mutate(SES_group = ifelse(SES>8, '9-10', ifelse(SES>5, '6-8', '1-5')))# create a category SES variable :
 
 #Creating dependent variables with the correct name 
 df$FA_second_year <-  df$food_allergy_24_month
@@ -192,6 +192,22 @@ summary(number_of_children)
 
 table(number_of_children, sibling_Atopic_diseases)
 ```
+
+מספר תצפיות = 1579
+מספר חולים בשנה הראשונה = 1035
+מספר חולים בשנה השניה = 950
+
+התפךכות בתצפיות בין הקבוצות 
+   1    2    3    4 
+0.14 0.49 0.35 0.02
+
+
+
+
+
+
+
+
 # arrange all the colnames by type for more calculation below 
 ```{r}
 # MASBIR
@@ -270,28 +286,28 @@ mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
                mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
-mdl1_sib <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
-               mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
+# mdl1_sib <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
+#                mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+#                mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
 mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
 
-mdl2_sib <- glm(is_atopic_second_year ~ SES_group + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
-             mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
+# mdl2_sib <- glm(is_atopic_second_year ~ SES_group + gender + 
+#              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases + 
+#              mother_year_birth + mother_education + number_of_children + 
+#              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
  
 
-df_mdl$mdl1 <- mdl1$fitted.values
-df_mdl$mdl1_sib <- mdl1_sib$fitted.values
-df_mdl$mdl2 <- mdl2$fitted.values
-df_mdl$mdl2_sib <- mdl2_sib$fitted.values
+df_mdl$mdl1 <- predict(mdl1)
+# df_mdl$mdl1_sib <- mdl1_sib$fitted.values
+df_mdl$mdl2 <- predict(mdl2)
+# df_mdl$mdl2_sib <- mdl2_sib$fitted.values
 
-df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, na.rm=T), mdl1_sib_avg = mean(mdl1_sib, na.rm=T), 
-                                                          mdl2_avg = mean(mdl2, na.rm=T), mdl2_sib_avg = mean(mdl2_sib, na.rm=T))
+df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, na.rm=T),  
+                                                          mdl2_avg = mean(mdl2, na.rm=T))
 df_mdl <- left_join(df_mdl, df_group, by = 'covid_time')
 ```
 
@@ -303,50 +319,79 @@ gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_year_birth + mother_education + number_of_children +
                s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-gam1_sib <- gam(is_atopic_first_year~ SES_group + gender + type_of_pregnancy + 
-             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases+
-             mother_year_birth + mother_education + number_of_children + 
-             s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+# gam1_sib <- gam(is_atopic_first_year~ SES_group + gender + type_of_pregnancy + 
+#              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases+
+#              mother_year_birth + mother_education + number_of_children + 
+#              s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
 gam2 <- gam(is_atopic_second_year~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-gam2_sib <- gam(is_atopic_second_year~ SES_group + gender + 
-             mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases +
-             mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
-df_mdl$gam1 <- gam1$fitted.values
-df_mdl$gam1_sib <- gam1_sib$fitted.values
-df_mdl$gam2 <- gam2$fitted.values
-df_mdl$gam2_sib <- gam2_sib$fitted.values
+# gam2_sib <- gam(is_atopic_second_year~ SES_group + gender + 
+#              mother_Atopic_diseases + father_Atopic_diseases + sibling_Atopic_diseases +
+#              mother_year_birth + mother_education + number_of_children + 
+#              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+df_mdl$gam1 <- predict(gam1)
+# df_mdl$gam1_sib <- gam1_sib
+df_mdl$gam2 <- predict(gam2)
+# df_mdl$gam2_sib <- gam2_sib
 ```
 
 ## Create Graphs 
 ```{r, error=F, warning=F, message=F}
 design = theme_bw() 
 
-
 # First year - No Sibilings
 ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
   design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))
 
-# First year - With Sibilings
-ggplot(df_mdl, aes(DOB, gam1_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_sib_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+# # First year - With Sibilings
+# ggplot(df_mdl, aes(DOB, gam1_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_sib_avg, col = covid_time)) + 
+#   design + labs(title = 'Atopic disease risk for babies up to one year old by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
+#   scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
 
 # Seconde year - No Sibilings
 ggplot(df_mdl, aes(DOB, gam2)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_avg, col = covid_time)) + 
   design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
   scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
 
-# Seconde year - With Sibilings
-ggplot(df_mdl, aes(DOB, gam2_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_sib_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' )) + ylim(0.5,1)
+# # Seconde year - With Sibilings
+# ggplot(df_mdl, aes(DOB, gam2_sib)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_sib_avg, col = covid_time)) + 
+#   design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB - WITH SIBILINGS', x = 'Date of Birth', y = 'Atopic disease probability') +
+#   scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' )) + ylim(0.5,1)
+```
+```{r}
+plot(gam1)
+```
+```{r}
+plot(df_mdl$DOB, predict(gam1), )
+
 ```
 
 
+```{r}
+design = theme_bw() 
+
+# First year - No Sibilings
+ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth() + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+
+
+# Seconde year - No Sibilings
+ggplot(df_mdl, aes(DOB, gam2)) + geom_smooth() + geom_line(aes(DOB, mdl2_avg, col = covid_time)) + 
+  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+
+
+```
+
+
+
+
+נקודות שמיכה אמר בפגישה :
+
+צריך להסתגל על הגרף של האוד רשיו ולא על הגרף של ההסבתרות כי הוא תלוי גם במשתנים האחרים 
