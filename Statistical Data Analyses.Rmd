@@ -126,7 +126,7 @@ df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
 attach(df)
 ```
 
-# Sibilings 
+## Sibilings 
 ```{r}
 # insert NA to siblings atopic disease when there is no siblings
 df_sib = df %>% mutate(sibling_Atopic_diseases_sum = ifelse(number_of_children ==0, NA, sibling_Atopic_diseases_sum)) 
@@ -209,7 +209,7 @@ covid_time_prop <- round(tablelist1[['covid_time']] / sum(tablelist1[['covid_tim
 
 
 
-# arrange all the colnames by type for more calculation below 
+## arrange all the colnames by type for more calculation below 
 ```{r}
 # MASBIR
 full_binari_exp <- c('Jew/Arab', 'gender', 'Allergy_total', 
@@ -247,7 +247,7 @@ g3 <- as.numeric(as.Date("2021-02-07")) - min(as.numeric(as.Date(df$DOB)))
 arranged_df <- df %>% arrange(DOB) %>% select(DOB,DOB_count,covid_time)
 ```
 
-# Two dim table - covid time VS each column 
+## Two dim table - covid time VS each column 
 ```{r}
 covid_time_table <- function(kpi){
   return(list(perc = round(ftable(covid_time, df[[kpi]]) / rowSums(ftable(covid_time, df[[kpi]])),3),
@@ -260,7 +260,7 @@ sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
 ```
 
 
-# Chi2 test - checking for AB test - results = Failed ! 
+## Chi2 test - checking for AB test - results = Failed ! 
 ```{r, warning=F}
 alpha = 0.01
 chisq_goodness <- function(kpi){
@@ -301,7 +301,6 @@ df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, 
 df_mdl <- left_join(df_mdl, df_group, by = 'covid_time')
 
 summary(mdl1)
-
 ```
 
 
@@ -320,58 +319,93 @@ gam2 <- gam(is_atopic_second_year ~ SES_group + gender +
 df_mdl$gam1 <- predict.gam(gam1)
 df_mdl$gam2 <- predict.gam(gam2)
 
-
 summary.gam(gam1)
 ```
+
+# Graphs
 
 ```{r}
-summary.gam(gam1)
-p_gam1 <- plot.gam(gam1, ylab = 'Beta', xlab = 'date point')[[1]]
-
-# length(p_gam1$fit)
-# df_mdl$p_gam1 <- p_gam1$fit
+# graph of the prob for is atopic 1 year
+p_prob <- plot(getViz(gam1), shift = coef(gam1)[1], trans = plogis, pages = 1)
+p_prob$plots[[1]]$data$fit
 ```
+
 
 ```{r}
 library(voxel)
 library(lmerTest)
+library(mgcViz)
 
-plot(gam1)
-p <- plotGAM(gam1, smooth.cov = 'DOB_count') 
+p <- plot(getViz(gam1))
+x <- p$plots[[1]]$data$fit$x
+y <- p$plots[[1]]$data$fit$y
 
-p$data
+gam_mdl_df <- p$plots[[1]]$data$fit
+gam_mdl_df <- gam_mdl_df %>% mutate(Born_at = if_else(x< g1, 'Up to March19', ifelse(x<g2, 'March19 - March20', ifelse(x<g3,'March20 - Feb21','From Feb21'))))
+gam_mdl_df$Born_at <- as.factor(gam_mdl_df$Born_at)
+
+gam_mdl_df <- gam_mdl_df %>% 
+  mutate(logistic_reg = if_else(x < g1, 0, ifelse(x<g2, mdl1$coefficients['covid_time2'] , ifelse(x<g3,mdl1$coefficients['covid_time3'], mdl1$coefficients['covid_time4']))))
+
+plus = min(as.numeric(as.Date(df$DOB)))
+gam_mdl_df <- gam_mdl_df %>% mutate(Date = as.Date(x + plus,  origin = '1970-01-01'))
+
+
+ggplot(gam_mdl_df, aes(Date,y)) + geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(Date, logistic_reg, col = Born_at), size = 1) + 
+  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1 ) +
+  theme_bw() + 
+  labs(title = 'GAM model for atopic in first year', x = 'Date of Birth', y = 'is_atopic_first_year') +
+  scale_color_manual(values=viridis(4))
 ```
 
-## Create Graphs 
+## Create Graphs - Old
 ```{r, error=F, warning=F, message=F}
-design = theme_bw() 
+# design = theme_bw() 
 
 # First year - No Sibilings
-ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))
-
-# Seconde year - No Sibilings
-ggplot(df_mdl, aes(DOB, gam2)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl2_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+# ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth(aes(col = covid_time)) + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
+#   design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+#   scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))
+# 
+# # Seconde year - No Sibilings
+# ggplot(df_mdl, aes(DOB, gam2)) + 
+#   geom_smooth(aes(col = covid_time)) + 
+#   geom_line(aes(DOB, mdl2_avg, col = covid_time)) +
+#   design + 
+#   labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
+#   scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ 
+#   ylim(0.5,1)
 ```
 
 
+
+# Predictions:
+
+## Typical person :
+
 ```{r}
-plot(df_mdl$DOB, predict(gam1))
-```
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]}
 
 
-```{r}
-# First year - No Sibilings
-ggplot(df_mdl, aes(DOB, gam1)) + geom_smooth() + geom_line(aes(DOB, mdl1_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for babies up to one year old by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+n <- length(df_mdl$record_id)
 
-# Seconde year - No Sibilings
-ggplot(df_mdl, aes(DOB, gam2)) + geom_smooth() + geom_line(aes(DOB, mdl2_avg, col = covid_time)) + 
-  design + labs(title = 'Atopic disease risk for 1-2 year old babies by DOB', x = 'Date of Birth', y = 'Atopic disease probability') +
-  scale_color_manual(values=viridis(4), name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21' ))+ ylim(0.5,1)
+typical_person <- data.frame(SES_group = rep(getmode(SES_group),n), 
+                             gender = rep(getmode(gender),n),
+                             type_of_pregnancy = rep(getmode(type_of_pregnancy),n),
+                             mother_Atopic_diseases = rep(getmode(mother_Atopic_diseases),n),
+                             father_Atopic_diseases = rep(getmode(father_Atopic_diseases),n),
+                             mother_year_birth = rep(mean(mother_year_birth),n),
+                             mother_education = rep(getmode(mother_education),n),
+                             number_of_children = rep(getmode(number_of_children),n))
+
+
+typical_person <- typical_person %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
+typical_person$predict <- predict.gam(gam1, typical_person, type = 'response')
+
+
+ggplot(typical_person, aes(DOB, predict)) + geom_line()
 ```
 
