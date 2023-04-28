@@ -6,6 +6,10 @@ date: "2023-02-12"
 
 # Import
 ```{r, echo=F, message=F}
+
+# install.packages('Rcpp', dependencies = TRUE)
+# install.packages("stargazer")
+
 # libraries:
 library(readxl)
 library(dplyr)
@@ -25,6 +29,7 @@ library(qgam)
 library(voxel)
 library(lmerTest)
 library(mgcViz)
+library(stargazer)
 
 options(scipen=5, digits = 5)
 ```
@@ -33,8 +38,8 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 # dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -299,11 +304,14 @@ mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
                mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
+stargazer(mdl1 , type="html", out="logistic 1 Y.html", out.header=TRUE)
+
 mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
 
+stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
 # df_mdl$mdl1 <- predict(mdl1)
 # df_mdl$mdl2 <- predict(mdl2)
 # 
@@ -320,11 +328,14 @@ gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_year_birth + mother_education + number_of_children +
                s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
+stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
+
 gam2 <- gam(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
+stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
 # df_mdl$gam1 <- predict.gam(gam1)
 # df_mdl$gam2 <- predict.gam(gam2)
 
