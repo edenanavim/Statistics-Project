@@ -38,8 +38,8 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 # dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -141,6 +141,7 @@ df$covid_time <- as.factor(df$covid_time)
 df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
 attach(df)
 ```
+
 
 ## Sibilings 
 ```{r}
@@ -273,6 +274,7 @@ sapply(binari_exp, covid_time_table, simplify =FALSE)
 sapply(discrite_exp, covid_time_table, simplify =FALSE)
 sapply(categoric_exp, covid_time_table, simplify =FALSE)
 sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
+
 ```
 
 
@@ -318,6 +320,10 @@ stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
 # df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, na.rm=T),  
 #                                                           mdl2_avg = mean(mdl2, na.rm=T))
 # df_mdl <- left_join(df_mdl, df_group, by = 'covid_time')
+
+
+# summary(mdl1)
+# summary(mdl2)
 ```
 
 
@@ -340,6 +346,7 @@ stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
 # df_mdl$gam2 <- predict.gam(gam2)
 
 # summary.gam(gam1)
+# summary.gam(gam2)
 ```
 
 # Graphs
@@ -364,6 +371,25 @@ ggplot(df_gam1, aes(Date,y, fill = Born_at)) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
   labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+## with Intercept:
+g1_interc = gam1$coefficients[1]
+l1_interc = mdl1$coefficients[1]
+
+df_gam1$y <- df_gam1$y + g1_interc
+df_gam1$logistic_reg <- df_gam1$logistic_reg + l1_interc
+
+ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(Date, logistic_reg, col = Born_at), size = 1, linetype=2) + 
+  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+# summary(mdl1)
+# summary.gam(gam1)
 ```
 
 # Second year
@@ -386,6 +412,26 @@ ggplot(df_gam2, aes(Date,y, fill = Born_at)) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
   labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+## with Intercept:
+g2_interc = gam2$coefficients[1]
+l2_interc = mdl2$coefficients[1]
+
+
+df_gam2$y <- df_gam2$y + g2_interc
+df_gam2$logistic_reg <- df_gam2$logistic_reg + l2_interc
+
+
+ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(Date, logistic_reg, col = Born_at), size = 1, linetype=2) + 
+  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+summary(mdl2)
+summary.gam(gam2)
 ```
 
 # Predictions:
