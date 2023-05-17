@@ -30,6 +30,7 @@ library(voxel)
 library(lmerTest)
 library(mgcViz)
 library(stargazer)
+library(cowplot)
 
 options(scipen=5, digits = 5)
 ```
@@ -37,10 +38,10 @@ options(scipen=5, digits = 5)
 # Prepare the data to analysis 
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
-# dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-# dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+# dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+#dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+# dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
@@ -141,6 +142,7 @@ df$covid_time <- as.factor(df$covid_time)
 df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
 attach(df)
 ```
+
 
 ## Sibilings 
 ```{r}
@@ -273,6 +275,7 @@ sapply(binari_exp, covid_time_table, simplify =FALSE)
 sapply(discrite_exp, covid_time_table, simplify =FALSE)
 sapply(categoric_exp, covid_time_table, simplify =FALSE)
 sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
+
 ```
 
 
@@ -298,48 +301,74 @@ chisq_goodness <- function(kpi){
 ## Logistic regression
 ```{r}
 df_mdl <- df %>% drop_na(SES_group, gender, type_of_pregnancy, mother_education, vaccine_12mo, nursing_setup_at_12mo, 
-                         is_atopic_first_year, is_atopic_second_year)
+                         is_atopic_first_year, is_atopic_second_year) %>% filter(mother_year_birth >1960, mother_year_birth < 2000)
+df_mdl$mother_year_birth = df_mdl$mother_year_birth - 1961
+
 
 mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
-               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
-
-stargazer(mdl1 , type="html", out="logistic 1 Y.html", out.header=TRUE)
+              mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
 mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
 
-stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
 # df_mdl$mdl1 <- predict(mdl1)
 # df_mdl$mdl2 <- predict(mdl2)
 # 
 # df_group <- df_mdl %>% group_by(covid_time) %>% summarise(mdl1_avg = mean(mdl1, na.rm=T),  
 #                                                           mdl2_avg = mean(mdl2, na.rm=T))
 # df_mdl <- left_join(df_mdl, df_group, by = 'covid_time')
+
+
+# summary(mdl1)
+# summary(mdl2)
+# predict.glm(mdl1, type='response')
+# sum(predict.glm(mdl1, type='response'))
+# 
+# table(df_mdl$mother_year_birth)
 ```
 
 
 ## GAM : 
+
 ```{r}
 gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
                mother_year_birth + mother_education + number_of_children +
                s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
-
 gam2 <- gam(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
+
 # df_mdl$gam1 <- predict.gam(gam1)
 # df_mdl$gam2 <- predict.gam(gam2)
 
 # summary.gam(gam1)
+# plot.gam(gam1)
+# summary.gam(gam2)
+# plot.gam(gam2)
+```
+
+## stargazer
+```{r}
+stargazer(mdl1 , type="html", out="logistic 1 Y.html", out.header=TRUE)
+
+stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
+
+stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
+
+stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
+
+stargazer(mdl1,gam1 , type="html", out="1 Y regressions.html", out.header=TRUE)
+
+stargazer(mdl2,gam2 , type="html", out="2 Y regressions.html", out.header=TRUE)
+
+
 ```
 
 # Graphs
@@ -360,10 +389,36 @@ df_gam1 <- df_gam1 %>% mutate(Date = as.Date(x + plus,  origin = '1970-01-01'))
 
 ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
   geom_line(aes(col = Born_at), size = 1) +
+  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+  
+  geom_line(aes(Date, logistic_reg, col = Born_at), size = 1, linetype=2) + 
+  geom_ribbon() +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+## with Intercept:
+g1_interc = gam1$coefficients[1]
+l1_interc = mdl1$coefficients[1]
+
+df_gam1$y <- df_gam1$y + g1_interc
+df_gam1$logistic_reg <- df_gam1$logistic_reg + l1_interc
+
+ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
+  geom_line(aes(col = Born_at), size = 1) +
   geom_line(aes(Date, logistic_reg, col = Born_at), size = 1, linetype=2) + 
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
   labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+# summary(mdl1)
+# summary.gam(gam1)
+# 
+# table(mother_year_birth)
+# sum(predict(mdl1))
+# 
+# plot(gam1) #פונקציה של המקדמים של רגרסיית גאם
 ```
 
 # Second year
@@ -386,11 +441,83 @@ ggplot(df_gam2, aes(Date,y, fill = Born_at)) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
   labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+
+## with Intercept:
+g2_interc = gam2$coefficients[1]
+l2_interc = mdl2$coefficients[1]
+
+
+df_gam2$y <- df_gam2$y + g2_interc
+df_gam2$logistic_reg <- df_gam2$logistic_reg + l2_interc
+
+
+ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(Date, logistic_reg, col = Born_at), size = 1, linetype=2) + 
+  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Connection between DOB and atopic disease', x = 'Date of Birth', y = 'Beta of is_atopic_first_year')
+
+# summary(mdl2)
+# summary.gam(gam2)
 ```
 
 # Predictions:
 
 ## Typical person :
+
+```{r}
+# Creating prediction of atopic disease for typical person  
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]}
+
+n <- length(df_mdl$record_id) # number of rows in the data
+
+# Data frame that contained the typical person n times in order to predict atopic diseas
+typical_person <- data.frame(SES_group = rep(getmode(SES_group),n),
+                             gender = rep(getmode(gender),n),
+                             type_of_pregnancy = rep(getmode(type_of_pregnancy),n),
+                             mother_Atopic_diseases = rep(getmode(mother_Atopic_diseases),n),
+                             father_Atopic_diseases = rep(getmode(father_Atopic_diseases),n),
+                             mother_year_birth = rep(mean(df_mdl$mother_year_birth),n),
+                             mother_education = rep(getmode(mother_education),n),
+                             number_of_children = rep(getmode(number_of_children),n),
+                             nursing_setup_at_12mo = rep(getmode(nursing_setup_at_12mo),n),
+                             vaccine_12mo = rep(getmode(vaccine_12mo),n))
+
+# adding DOB for each observation
+typical_person <- typical_person %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
+typical_person <- typical_person %>% mutate(Born_at = if_else(DOB_count< g1, 'Up to March19', ifelse(DOB_count<g2, 'March19 - March20', ifelse(DOB_count<g3,'March20 - Feb21','From Feb21'))), covid_time = if_else(DOB_count< g1, 1, ifelse(DOB_count<g2, 2, ifelse(DOB_count<g3,3,4))))
+typical_person$covid_time <- as.factor(typical_person$covid_time)
+
+
+# predict
+typical_person$gam_predict_first_year <- predict.gam(gam1, typical_person, type = 'response')
+typical_person$gam_predict_second_year <- predict.gam(gam2, typical_person, type = 'response')
+typical_person$reg_predict_first_year <- predict(mdl1, typical_person, type = 'response')
+typical_person$reg_predict_second_year <- predict(mdl2, typical_person, type = 'response')
+
+
+# Plot the predictions :
+ggplot(typical_person, aes(DOB, gam_predict_first_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1, linetype=2) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')
+
+
+ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1, linetype=2) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in second year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')
+
+
+```
+
+
 
 ```{r}
 # Creating prediction of atopic disease for typical person  
@@ -406,17 +533,71 @@ typical_person <- data.frame(SES_group = rep(getmode(SES_group),n),
                              type_of_pregnancy = rep(getmode(type_of_pregnancy),n),
                              mother_Atopic_diseases = rep(getmode(mother_Atopic_diseases),n),
                              father_Atopic_diseases = rep(getmode(father_Atopic_diseases),n),
-                             mother_year_birth = rep(mean(mother_year_birth),n),
+                             mother_year_birth = rep(mean(df_mdl$mother_year_birth),n),
                              mother_education = rep(getmode(mother_education),n),
                              number_of_children = rep(getmode(number_of_children),n),
                              nursing_setup_at_12mo = rep(getmode(nursing_setup_at_12mo),n),
-                             vaccine_12mo = rep(getmode(vaccine_12mo),n))
+                             vaccine_12mo = rep(getmode(vaccine_12mo),n),
+                             baby_number= rep(1,n))
 
-# adding DOB dor each observation 
+set.seed(111)
+typical_person_2 <- data.frame(SES_group = rep(sample(unique(na.omit(SES_group)),1),n), 
+                              gender = rep(sample(unique(na.omit(gender)),1),n),
+                              type_of_pregnancy = rep(sample(unique(na.omit(type_of_pregnancy)),1),n),
+                              mother_Atopic_diseases = rep(sample(unique(na.omit(mother_Atopic_diseases)),1),n),
+                              father_Atopic_diseases = rep(sample(unique(na.omit(father_Atopic_diseases)),1),n),
+                              mother_year_birth = rep(sample(unique(na.omit(df_mdl$mother_year_birth)),1),n),
+                              mother_education = rep(sample(unique(na.omit(mother_education)),1),n),
+                              number_of_children = rep(sample(unique(na.omit(number_of_children)),1),n),
+                              nursing_setup_at_12mo = rep(sample(unique(na.omit(nursing_setup_at_12mo)),1),n),
+                              vaccine_12mo = rep(sample(unique(na.omit(vaccine_12mo)),1),n),
+                              baby_number= rep(2,n))
+
+typical_person_3 <- data.frame(SES_group = rep(sample(unique(na.omit(SES_group)),1),n), 
+                              gender = rep(sample(unique(na.omit(gender)),1),n),
+                              type_of_pregnancy = rep(sample(unique(na.omit(type_of_pregnancy)),1),n),
+                              mother_Atopic_diseases = rep(sample(unique(na.omit(mother_Atopic_diseases)),1),n),
+                              father_Atopic_diseases = rep(sample(unique(na.omit(father_Atopic_diseases)),1),n),
+                              mother_year_birth = rep(sample(unique(na.omit(df_mdl$mother_year_birth)),1),n),
+                              mother_education = rep(sample(unique(na.omit(mother_education)),1),n),
+                              number_of_children = rep(sample(unique(na.omit(number_of_children)),1),n),
+                              nursing_setup_at_12mo = rep(sample(unique(na.omit(nursing_setup_at_12mo)),1),n),
+                              vaccine_12mo = rep(sample(unique(na.omit(vaccine_12mo)),1),n),
+                              baby_number= rep(3,n))
+
+typical_person_4 <- data.frame(SES_group = rep(sample(unique(na.omit(SES_group)),1),n), 
+                              gender = rep(sample(unique(na.omit(gender)),1),n),
+                              type_of_pregnancy = rep(sample(unique(na.omit(type_of_pregnancy)),1),n),
+                              mother_Atopic_diseases = rep(sample(unique(na.omit(mother_Atopic_diseases)),1),n),
+                              father_Atopic_diseases = rep(sample(unique(na.omit(father_Atopic_diseases)),1),n),
+                              mother_year_birth = rep(sample(unique(na.omit(df_mdl$mother_year_birth)),1),n),
+                              mother_education = rep(sample(unique(na.omit(mother_education)),1),n),
+                              number_of_children = rep(sample(unique(na.omit(number_of_children)),1),n),
+                              nursing_setup_at_12mo = rep(sample(unique(na.omit(nursing_setup_at_12mo)),1),n),
+                              vaccine_12mo = rep(sample(unique(na.omit(vaccine_12mo)),1),n),
+                              baby_number= rep(4,n))
+
+
+# adding DOB for each observation 
+#first baby
 typical_person <- typical_person %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
 typical_person <- typical_person %>% mutate(Born_at = if_else(DOB_count< g1, 'Up to March19', ifelse(DOB_count<g2, 'March19 - March20', ifelse(DOB_count<g3,'March20 - Feb21','From Feb21'))), covid_time = if_else(DOB_count< g1, 1, ifelse(DOB_count<g2, 2, ifelse(DOB_count<g3,3,4))))
 typical_person$covid_time <- as.factor(typical_person$covid_time)
+#second baby
+typical_person_2 <- typical_person_2 %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
+typical_person_2 <- typical_person_2 %>% mutate(Born_at = if_else(DOB_count< g1, 'Up to March19', ifelse(DOB_count<g2, 'March19 - March20', ifelse(DOB_count<g3,'March20 - Feb21','From Feb21'))), covid_time = if_else(DOB_count< g1, 1, ifelse(DOB_count<g2, 2, ifelse(DOB_count<g3,3,4))))
+typical_person_2$covid_time <- as.factor(typical_person_2$covid_time)
+#third baby
+typical_person_3 <- typical_person_3 %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
+typical_person_3 <- typical_person_3 %>% mutate(Born_at = if_else(DOB_count< g1, 'Up to March19', ifelse(DOB_count<g2, 'March19 - March20', ifelse(DOB_count<g3,'March20 - Feb21','From Feb21'))), covid_time = if_else(DOB_count< g1, 1, ifelse(DOB_count<g2, 2, ifelse(DOB_count<g3,3,4))))
+typical_person_3$covid_time <- as.factor(typical_person_3$covid_time)
+#fourth baby
+typical_person_4 <- typical_person_4 %>% mutate(DOB = df_mdl$DOB, DOB_count = df_mdl$DOB_count)
+typical_person_4 <- typical_person_4 %>% mutate(Born_at = if_else(DOB_count< g1, 'Up to March19', ifelse(DOB_count<g2, 'March19 - March20', ifelse(DOB_count<g3,'March20 - Feb21','From Feb21'))), covid_time = if_else(DOB_count< g1, 1, ifelse(DOB_count<g2, 2, ifelse(DOB_count<g3,3,4))))
+typical_person_4$covid_time <- as.factor(typical_person_4$covid_time)
 
+
+typical_person <- rbind(typical_person,typical_person_2,typical_person_3,typical_person_4)
 
 # predict 
 typical_person$gam_predict_first_year <- predict.gam(gam1, typical_person, type = 'response')
@@ -425,19 +606,91 @@ typical_person$reg_predict_first_year <- predict(mdl1, typical_person, type = 'r
 typical_person$reg_predict_second_year <- predict(mdl2, typical_person, type = 'response')
 
 
+# ggplot(typical_person,aes(DOB, gam_predict_first_year)) +
+#   geom_line(aes(color=as.factor(baby_number),linetype =Born_at ) ,size = 1)+
+#   geom_line(aes(DOB, reg_predict_first_year,color=as.factor(baby_number),linetype =Born_at ),size = 1)+
+#   scale_linetype_manual(values = c("dotdash","dotted","dashed", "solid"))
+# 
+# ggplot(typical_person,aes(DOB, gam_predict_first_year)) +
+#   geom_line(aes(color=as.factor(baby_number)) ,size = 1)+
+#   geom_line(aes(DOB, reg_predict_first_year,color=as.factor(baby_number)),size = 1)+
+#   geom_vline(xintercept = c(as.Date("2019-03-01")+1,as.Date("2020-03-11")+1,as.Date("2021-02-07")+1), size=1.5)
+
+
 # Plot the predictions : 
-ggplot(typical_person, aes(DOB, gam_predict_first_year)) + 
-  geom_line(aes(col = Born_at), size = 1) + 
-  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1, linetype=2) + 
+# first year
+baby_1_1Y <- ggplot(typical_person %>% filter(baby_number == 1), aes(DOB, gam_predict_first_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')
+  labs(title = '', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.5,1))#+ 
+  #theme(legend.position = "none")
+
+baby_2_1Y <- ggplot(typical_person %>% filter(baby_number == 2), aes(DOB, gam_predict_first_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.5,1))#+ 
+  #theme(legend.position = "none")
+
+baby_3_1Y <- ggplot(typical_person %>% filter(baby_number == 3), aes(DOB, gam_predict_first_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.5,1))#+ 
+  #theme(legend.position = "none")
+
+baby_4_1Y <- ggplot(typical_person %>% filter(baby_number == 4), aes(DOB, gam_predict_first_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.5,1))
+
+plot_grid(baby_1_1Y, baby_2_1Y, baby_3_1Y, baby_4_1Y, ncol = 2)
 
 
-ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
-  geom_line(aes(col = Born_at), size = 1) + 
-  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1, linetype=2) + 
+
+# second year:
+
+baby_1_2Y <- ggplot(typical_person %>% filter(baby_number == 1), aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1) +
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-  labs(title = 'Prob to atopic disease in second year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.2,0.8))#+ 
+  #theme(legend.position = "none")
+
+baby_2_2Y <- ggplot(typical_person %>% filter(baby_number == 2), aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.2,0.8))#+ 
+  #theme(legend.position = "none")
+
+baby_3_2Y <- ggplot(typical_person %>% filter(baby_number == 3), aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.2,0.8))#+ 
+  #theme(legend.position = "none")
+
+baby_4_2Y <- ggplot(typical_person %>% filter(baby_number == 4), aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1) +
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+  labs(title = 'Prob to atopic disease in first year using GAM and Log reggression', x = 'Date of Birth', y = 'Prob')+
+  ylim(c(0.2,0.8))
+
+
+plot_grid(baby_1_2Y, baby_2_2Y, baby_3_2Y, baby_4_2Y, ncol = 2)
+
+
 
 
 ```
