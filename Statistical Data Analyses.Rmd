@@ -40,8 +40,8 @@ options(scipen=5, digits = 5)
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-# dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+# dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
@@ -334,15 +334,15 @@ gam2 <- gam(is_atopic_second_year ~ SES_group + gender +
 ```{r}
 # stargazer(mdl1 , type="html", out="logistic 1 Y.html", out.header=TRUE)
 
-stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
-
-stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
-
-stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
-
-stargazer(mdl1,gam1 , type="html", out="1 Y regressions.html", out.header=TRUE)
-
-stargazer(mdl2,gam2 , type="html", out="2 Y regressions.html", out.header=TRUE)
+# stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
+# 
+# stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
+# 
+# stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
+# 
+# stargazer(mdl1,gam1 , type="html", out="1 Y regressions.html", out.header=TRUE)
+# 
+# stargazer(mdl2,gam2 , type="html", out="2 Y regressions.html", out.header=TRUE)
 
 
 ```
@@ -377,16 +377,20 @@ l1_interc = mdl1$coefficients[1]
 df_gam1$y <- df_gam1$y + g1_interc
 df_gam1$y_log <- df_gam1$y_log + l1_interc
 
-ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
+plot1_first_year <- ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
   geom_line(aes(col = Born_at), size = 1) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
   
   geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), , alpha = 0.1)+
+  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
 
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
   labs(title = "Date of birth coefficient distribution", subtitle ="During the first year of a baby's life", x = 'Date of Birth', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)
+  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+
+plot1_first_year
+ggsave('first_year_mdl.jpeg',plot1_first_year, width =10, height =6)
 ```
 
 # Second year
@@ -417,16 +421,20 @@ l2_interc = mdl2$coefficients[1]
 df_gam2$y <- df_gam2$y + g2_interc
 df_gam2$y_log <- df_gam2$y_log + l2_interc
 
-ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
+plot2_second_year <- ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
   geom_line(aes(col = Born_at), size = 1) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
 
   geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), , alpha = 0.1)+
+  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
   
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
   labs(title = "Date of birth coefficient distribution", subtitle ="During the second year of a baby's life", x = 'Date of Birth', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)
+  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+
+plot2_second_year
+ggsave('second_year_mdl.jpeg',plot2_second_year, width =10, height =6)
 ```
 
 # Predictions:
@@ -471,23 +479,31 @@ typical_person$reg_p_se2 <- predict(mdl2, typical_person, type = 'response', se.
 
 
 # Plot the predictions :
-ggplot(typical_person, aes(DOB, gam_predict_first_year)) +
+typical_baby_plot1 <- ggplot(typical_person, aes(DOB, gam_predict_first_year)) +
   geom_line(aes(col = Born_at), size = 1) +
   geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.975), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.975), y = NULL, fill = Born_at, col = Born_at), alpha=0.1)+ 
   geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1, linetype=2) +
   geom_ribbon(aes(ymin = reg_predict_first_year - reg_p_se1*qnorm(0.975), ymax = reg_predict_first_year + reg_p_se1*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-  labs(title = "Atopic disease risk", subtitle = "During the first year of a baby's life" , x = 'Date of Birth', y = 'Probability')
+  labs(title = "Atopic disease risk", subtitle = "During the first year of a baby's life" , x = 'Date of Birth', y = 'Probability')  + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
 
 
-ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
+typical_baby_plot2 <- ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
   geom_line(aes(col = Born_at), size = 1) +
   geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.975), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.975), y=NULL, col=Born_at, fill=Born_at), alpha=0.1)+ 
   
   geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1, linetype=2) +
   geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.975), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-labs(title = "Atopic disease risk", subtitle = "During the second year of a baby's life" , x = 'Date of Birth', y = 'Probability')
+labs(title = "Atopic disease risk", subtitle = "During the second year of a baby's life" , x = 'Date of Birth', y = 'Probability')   + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+
+ggsave('typical_baby1.jpeg',typical_baby_plot1, width =10, height =6)
+ggsave('typical_baby2.jpeg',typical_baby_plot2, width =10, height =6)
+
+typical_baby_plot1
+typical_baby_plot2
 ```
 
 
