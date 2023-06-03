@@ -39,9 +39,9 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+ dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+#dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
@@ -271,10 +271,10 @@ covid_time_table <- function(kpi){
   return(list(perc = round(ftable(covid_time, df[[kpi]]) / rowSums(ftable(covid_time, df[[kpi]])),3),
               n = table(covid_time, df[[kpi]])))}
 
-sapply(binari_exp, covid_time_table, simplify =FALSE)
-sapply(discrite_exp, covid_time_table, simplify =FALSE)
-sapply(categoric_exp, covid_time_table, simplify =FALSE)
-sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
+# sapply(binari_exp, covid_time_table, simplify =FALSE)
+# sapply(discrite_exp, covid_time_table, simplify =FALSE)
+# sapply(categoric_exp, covid_time_table, simplify =FALSE)
+# sapply(exploreatory_variables, covid_time_table, simplify =FALSE)
 
 ```
 
@@ -344,7 +344,9 @@ gam2 <- gam(is_atopic_second_year ~ SES_group + gender +
 # 
 # stargazer(mdl2,gam2 , type="html", out="2 Y regressions.html", out.header=TRUE)
 
-
+# table(df_mdl$covid_time,df_mdl$is_atopic_first_year)
+# 
+# table(df_mdl$covid_time,df_mdl$is_atopic_second_year)
 ```
 
 # Graphs
