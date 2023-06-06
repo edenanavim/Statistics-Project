@@ -39,9 +39,10 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
- dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+ # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-#dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+# dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
@@ -309,7 +310,7 @@ mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
 
-mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
+mdl2 <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
@@ -328,6 +329,15 @@ gam2 <- gam(is_atopic_second_year ~ SES_group + gender +
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+
+summary(gam2)
+
+gam2 <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + gender + 
+             mother_Atopic_diseases + father_Atopic_diseases +
+             mother_year_birth + mother_education + number_of_children + 
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+
+summary(gam2)
 ```
 
 ## stargazer
@@ -391,8 +401,8 @@ plot1_first_year <- ggplot(df_gam1, aes(Date,y, fill = Born_at)) +
   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
 
+# ggsave('first_year_mdl.jpeg',plot1_first_year, width =10, height =6)
 plot1_first_year
-ggsave('first_year_mdl.jpeg',plot1_first_year, width =10, height =6)
 ```
 
 # Second year
@@ -435,8 +445,8 @@ plot2_second_year <- ggplot(df_gam2, aes(Date,y, fill = Born_at)) +
   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
 
+# ggsave('second_year_mdl.jpeg',plot2_second_year, width =10, height =6)
 plot2_second_year
-ggsave('second_year_mdl.jpeg',plot2_second_year, width =10, height =6)
 ```
 
 # Predictions:
