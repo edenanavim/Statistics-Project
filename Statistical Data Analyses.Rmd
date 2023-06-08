@@ -319,7 +319,7 @@ mdl2 <- glm(is_atopic_second_year ~ SES_group + gender +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time+ 
              is_atopic_first_year, data=df_mdl, family='binomial')
-
+summary(mdl2)
 
 mdl2_atopic <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
@@ -330,17 +330,18 @@ mdl2_atopic <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
 
 
 ## GAM : 
+
 ```{r}
 gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
                mother_year_birth + mother_education + number_of_children +
                s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
+summary(gam1)
 
 gam2 <- gam(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') +
-             is_atopic_first_year, data=df_mdl, family=binomial)
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr'), data=df_mdl, family=binomial)
 
 # summary(gam2)
 
@@ -351,6 +352,12 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
 
 # summary(gam2_atopic)
 ```
+
+# פה צריך לייצר טבלאות אינםורמטיביות של כל מודל בנפרד 
+# הטבלאות צריכות להיראות טוב לטובת הצגה לעידית 
+
+
+
 
 
 ## stargazer
@@ -626,7 +633,7 @@ typical_person$reg_p_se2_sick1 <- predict(mdl2, typical_person_sick1, type = 're
 # Plot the predictions :
 typical_baby_plot1 <- ggplot(typical_person, aes(DOB, gam_predict_first_year)) +  
                         geom_line(aes(col = Born_at), size = 1) +
-                        geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.975), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.975), y = NULL, fill = Born_at, col = Born_at), alpha=0.1)+ 
+                        geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.975), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+ 
                         geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1, linetype=2) +
                         geom_ribbon(aes(ymin = reg_predict_first_year - reg_p_se1*qnorm(0.975), ymax = reg_predict_first_year + reg_p_se1*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
                         scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
@@ -636,7 +643,7 @@ typical_baby_plot1 <- ggplot(typical_person, aes(DOB, gam_predict_first_year)) +
 
 typical_baby_plot2 <- ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
   geom_line(aes(col = Born_at), size = 1) +
-  geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.975), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.975), y=NULL, col=Born_at, fill=Born_at), alpha=0.1)+ 
+  geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.975), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.975), y=NULL, fill=Born_at), alpha=0.1)+ 
   
   geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1, linetype=2) +
   geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.975), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
@@ -650,6 +657,52 @@ labs(title = "Atopic disease risk", subtitle = "During the second year of a baby
 typical_baby_plot1
 typical_baby_plot2
 ```
+```{r}
+# separeted graphs of prob :
+
+prob_first_year_log <- ggplot(typical_person, aes(DOB, gam_predict_first_year)) +  
+                        geom_line(aes(DOB, reg_predict_first_year, col = Born_at), size = 1) +
+                        geom_ribbon(aes(ymin = reg_predict_first_year - reg_p_se1*qnorm(0.975), ymax = reg_predict_first_year + reg_p_se1*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
+                        scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+                        labs(title = "Atopic disease risk - Logistic model", subtitle = "During the first year of a baby's life - Logistic model" , x = 'Birth date', y = 'Probability')  + 
+                        scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+prob_first_year_log
+
+
+
+prob_first_year_GAM <- ggplot(typical_person, aes(DOB, gam_predict_first_year)) +  
+                        geom_line(aes(col = Born_at), size = 1) +
+                        geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.975), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+ 
+                        scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+                        labs(title = "Atopic disease risk - GAM model", subtitle = "During the first year of a baby's life" , x = 'Birth date', y = 'Probability')  + 
+                        scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+prob_first_year_GAM
+
+prob_second_year_log <- ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(DOB, reg_predict_second_year, col = Born_at), size = 1) +
+  geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.975), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+labs(title = "Atopic disease risk - Logistic model", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+prob_second_year_log
+
+prob_second_year_GAM <- ggplot(typical_person, aes(DOB, gam_predict_second_year)) +
+  geom_line(aes(col = Born_at), size = 1) +
+  geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.975), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.975), y=NULL, fill=Born_at), alpha=0.1)+ 
+  scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
+labs(title = "Atopic disease risk - GAM model", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   + 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+prob_second_year_GAM
+
+
+ggsave('probabilty_Log_model_plot_first_year.jpeg',prob_first_year_log, width =10, height =6)
+ggsave('probabilty_GAM_model_plot_first_year.jpeg',prob_first_year_GAM, width =10, height =6)
+ggsave('probabilty_Log_model_plot_second_year.jpeg',prob_second_year_log, width =10, height =6)
+ggsave('probabilty_GAM_model_plot_second_year.jpeg',prob_second_year_GAM, width =10, height =6)
+```
+
+
+
 
 ```{r}
 
