@@ -15,8 +15,9 @@ options(scipen=5, digits = 5)
 # Reading the file:
 # dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
 # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
-     
+# dir<-"C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_22.2.23.xlsx"
+dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
 
@@ -120,7 +121,7 @@ df <- df %>% mutate(
 attach(df)
 
 
-write.csv(df, "C:/Users/Shahar/Documents/GitHub/Statistics-Project/final_df.csv", row.names = FALSE)
+# write.csv(df, "C:/Users/Shahar/Documents/GitHub/Statistics-Project/final_df.csv", row.names = FALSE)
 ```
 
 # Summary of the data:

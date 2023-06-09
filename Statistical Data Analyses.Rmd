@@ -32,6 +32,11 @@ library(mgcViz)
 library(stargazer)
 library(cowplot)
 
+
+# install.packages('jtools')
+library(jtools)
+
+
 options(scipen=5, digits = 5)
 ```
 
@@ -39,9 +44,9 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
 #dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-# dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 
 df <- read_excel(dir, sheet = 1)
 df <- df %>% mutate(DOB = as.Date(DOB)) 
@@ -134,14 +139,24 @@ df$DOB_count = as.numeric(as.Date(df$DOB)) - min(as.numeric(as.Date(df$DOB)))
  
 # Change categorical variable to factors 
 df$feeding_type <- as.factor(df$feeding_type)
+df$gender <- as.factor(df$gender)
+df$mother_Atopic_diseases <- as.factor(df$mother_Atopic_diseases)
+df$father_Atopic_diseases <- as.factor(df$father_Atopic_diseases)
 df$mother_education <- as.factor(df$mother_education)
 df$type_of_pregnancy <- as.factor(df$type_of_pregnancy)
 df$nursing_setup_at_12mo <- as.factor(df$nursing_setup_at_12mo)
 df$covid_time <- as.factor(df$covid_time)
 
-
+## preapre the final data frame for the models 
 df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
-attach(df)
+df_mdl <- df %>% drop_na(SES_group, gender, type_of_pregnancy, mother_education, vaccine_12mo, nursing_setup_at_12mo, is_atopic_first_year, is_atopic_second_year) %>% 
+  filter(mother_year_birth >1960, mother_year_birth < 2000) %>% 
+  mutate(is_atopic_both = ifelse(is_atopic_first_year >0, ifelse(is_atopic_second_year>0, 1, 0),0), is_atopic_any = ifelse(is_atopic_first_year + is_atopic_second_year >0,1,0))
+
+df_mdl$mother_year_birth = df_mdl$mother_year_birth - 1961
+
+
+attach(df_mdl)
 ```
 
 
@@ -181,55 +196,51 @@ cor(sibilings_df$sibling_Atopic_diseases, sibilings_df$is_atopic_second_year, us
 
 
 # Descriptive statistics :
-```{r}
-# SHAHAR
-n_obs = length(record_id)
-n_atopic1 = sum(is_atopic_first_year)
-n_atopic2 = sum(is_atopic_second_year, na.rm = T)
+```{r, fig.width=10}
 
-exp_var1 <- df %>% select(c(SES_group, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases,
-             mother_education, number_of_children, type_of_pregnancy, covid_time))
-exp_var2 <- df %>% select(c(SES, gender, vaccine_12mo, feeding_type, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
-             mother_education, number_of_children, type_of_pregnancy, nursing_setup_at_12mo, covid_time))
+n_df = df_mdl %>% group_by(covid_time ) %>% summarise(n = n(), is_atopic_first_year = sum(is_atopic_first_year), is_atopic_second_year = sum(is_atopic_second_year), is_atopic_any = sum(is_atopic_any), is_atopic_both = sum(is_atopic_both)) 
 
-tablelist1 <- mapply(table, exp_var1)
-tablelist2 <- mapply(table, exp_var2)
+n_df <- n_df %>% mutate(is_atopic_first_year_perc = round(100*is_atopic_first_year/n), 
+                        is_atopic_second_year_perc = round(100*is_atopic_second_year/n), 
+                        is_atopic_any_perc = round(100*is_atopic_any/n),
+                        is_atopic_both_perc = round(100*is_atopic_both/n))
 
-covid_time_prop <- round(tablelist1[['covid_time']] / sum(tablelist1[['covid_time']]),2)
+plot_df <- data.frame(covid_time = rep(c(1,2,3,4), 4), 
+                      atopic = c(rep('1) First year',4), rep('2) Secound year',4), rep('3) First or Second year',4), rep('4) First and Second',4)) , 
+                      precent = c(n_df$is_atopic_first_year_perc, n_df$is_atopic_second_year_perc, n_df$is_atopic_any_perc, n_df$is_atopic_both_perc))
 
-# boxplot(number_of_children, is_atopic_first_year)
+ggplot(plot_df, aes(covid_time, y = precent, fill = as.factor(covid_time))) + 
+  geom_col() + theme_bw() + facet_wrap(~atopic, nrow=1) + 
+  scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4', 'red4'),
+                    name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21')) + 
+  xlab("")+  ylab("Atopic disease (%)") + 
+  theme(axis.text.x = element_text(color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) +
+  geom_text(aes(label = round(plot_df$precent,3)), vjust = 0, size = 3.5, fontface = "bold")
 
-# # EDEN 
-# table(covid_time)
-# 
-# covid_time_prop
-# 
-# table(covid_time,is_atopic_first_year)
-# 
-# table(covid_time,is_atopic_second_year)
-# 
-# summary(number_of_children)
-# 
-# table(number_of_children, sibling_Atopic_diseases)
 
-agg_table <- df %>% group_by(covid_time) %>% summarise(n = n(), first_year = sum(is_atopic_first_year), second_year = sum(is_atopic_second_year) )
-agg_table %>% mutate(first_perc = round(100*first_year/ n), second = round(100*second_year/n))
 ```
 
-מספר תצפיות = 1579
-מספר חולים בשנה הראשונה = 1035
-מספר חולים בשנה השניה = 950
 
-התפךכות בתצפיות בין הקבוצות 
-   1    2    3    4 
-0.14 0.49 0.35 0.02
+```{r}
+# exp_var1 <- df_mdl %>% select(c(SES_group, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases,
+#              mother_education, number_of_children, type_of_pregnancy, covid_time))
+# exp_var2 <- df_mdl %>% select(c(SES, gender, vaccine_12mo, feeding_type, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases, 
+#              mother_education, number_of_children, type_of_pregnancy, nursing_setup_at_12mo, covid_time))
+# 
+# tablelist1 <- mapply(table, exp_var1)
+# tablelist2 <- mapply(table, exp_var2)
 
+# covid_time_prop <- round(tablelist1[['covid_time']] / sum(tablelist1[['covid_time']]),2)
+# boxplot(number_of_children, is_atopic_first_year)
+# # EDEN 
+# table(covid_time)
+# covid_time_prop
+# table(covid_time,is_atopic_first_year)
+# table(covid_time,is_atopic_second_year)
+# summary(number_of_children)
+# table(number_of_children, sibling_Atopic_diseases)
 
-
-
-
-
-
+```
 
 ## arrange all the colnames by type for more calculation below 
 ```{r}
@@ -304,12 +315,6 @@ chisq_goodness <- function(kpi){
 
 ## Logistic regression
 ```{r}
-df_mdl <- df %>% drop_na(SES_group, gender, type_of_pregnancy, mother_education, vaccine_12mo, nursing_setup_at_12mo, 
-                         is_atopic_first_year, is_atopic_second_year) %>% 
-                  filter(mother_year_birth >1960, mother_year_birth < 2000)
-df_mdl$mother_year_birth = df_mdl$mother_year_birth - 1961
-
-
 mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
               mother_year_birth + mother_education + number_of_children + covid_time  , data = df_mdl, family = "binomial")
@@ -317,14 +322,17 @@ mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
 mdl2 <- glm(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
-             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time+ 
-             is_atopic_first_year, data=df_mdl, family='binomial')
-summary(mdl2)
+             type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time , data=df_mdl, family='binomial')
 
 mdl2_atopic <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
+# 
+# summary(mdl1)
+summary(mdl2)
+# summ(mdl1)
+# summ(mdl2)
 ```
 
 
@@ -336,14 +344,14 @@ gam1 <- gam(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
                mother_year_birth + mother_education + number_of_children +
                s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
-summary(gam1)
+# summary(gam1)
 
 gam2 <- gam(is_atopic_second_year ~ SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr'), data=df_mdl, family=binomial)
 
-# summary(gam2)
+summary(gam2)
 
 gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + gender + 
              mother_Atopic_diseases + father_Atopic_diseases +
@@ -661,6 +669,7 @@ labs(title = "Atopic disease risk", subtitle = "During the second year of a baby
 typical_baby_plot1
 typical_baby_plot2
 ```
+
 ```{r}
 # separeted graphs of prob :
 
