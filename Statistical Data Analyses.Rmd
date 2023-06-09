@@ -38,8 +38,8 @@ options(scipen=5, digits = 5)
 # Prepare the data to analysis 
 ```{r, message=F, warning=F, error=F}
 # Reading the file:
-dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
- # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+#dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 # dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 
@@ -365,10 +365,14 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
 # stargazer(mdl1 , type="html", out="logistic 1 Y.html", out.header=TRUE)
 
 # stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
+
+# stargazer(mdl1, mdl2 , type="html", out="logistic.html", out.header=TRUE)
 # 
 # stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
 # 
 # stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
+
+# stargazer(gam1, gam2 , type="html", out="GAM.html", out.header=TRUE)
 # 
 # stargazer(mdl1,gam1 , type="html", out="1 Y regressions.html", out.header=TRUE)
 # 
