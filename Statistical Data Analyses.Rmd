@@ -38,6 +38,8 @@ library(jtools)
 
 
 options(scipen=5, digits = 5)
+
+1630-1873
 ```
 
 # Prepare the data to analysis 
@@ -48,8 +50,8 @@ options(scipen=5, digits = 5)
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
 
-df <- read_excel(dir, sheet = 1)
-df <- df %>% mutate(DOB = as.Date(DOB)) 
+df_raw <- read_excel(dir, sheet = 1)
+df <- df_raw %>% mutate(DOB = as.Date(DOB)) 
 
 df <- df %>% filter(is.na(lost_of_followup))# Filtering only participants that completed the survey
 df <- df %>% filter(month_survey_complete == 2) # Filtering only participants that completed the second year
@@ -148,11 +150,12 @@ df$nursing_setup_at_12mo <- as.factor(df$nursing_setup_at_12mo)
 df$covid_time <- as.factor(df$covid_time)
 
 ## preapre the final data frame for the models 
-df <- df %>% drop_na(is_atopic_first_year, is_atopic_second_year)
+
 df_mdl <- df %>% drop_na(SES_group, gender, type_of_pregnancy, mother_education, vaccine_12mo, nursing_setup_at_12mo, is_atopic_first_year, is_atopic_second_year) %>% 
   filter(mother_year_birth >1960, mother_year_birth < 2000) %>% 
   mutate(is_atopic_both = ifelse(is_atopic_first_year >0, ifelse(is_atopic_second_year>0, 1, 0),0), is_atopic_any = ifelse(is_atopic_first_year + is_atopic_second_year >0,1,0))
 
+#reduce variance from this variable
 df_mdl$mother_year_birth = df_mdl$mother_year_birth - 1961
 
 
@@ -196,7 +199,7 @@ cor(sibilings_df$sibling_Atopic_diseases, sibilings_df$is_atopic_second_year, us
 
 
 # Descriptive statistics :
-```{r, fig.width=10}
+```{r, fig.width=10, fig.height=3}
 
 n_df = df_mdl %>% group_by(covid_time ) %>% summarise(n = n(), is_atopic_first_year = sum(is_atopic_first_year), is_atopic_second_year = sum(is_atopic_second_year), is_atopic_any = sum(is_atopic_any), is_atopic_both = sum(is_atopic_both)) 
 
@@ -209,17 +212,22 @@ plot_df <- data.frame(covid_time = rep(c(1,2,3,4), 4),
                       atopic = c(rep('1) First year',4), rep('2) Secound year',4), rep('3) First or Second year',4), rep('4) First and Second',4)) , 
                       precent = c(n_df$is_atopic_first_year_perc, n_df$is_atopic_second_year_perc, n_df$is_atopic_any_perc, n_df$is_atopic_both_perc))
 
-ggplot(plot_df, aes(covid_time, y = precent, fill = as.factor(covid_time))) + 
+Descriptive_plot <-  ggplot(plot_df, aes(covid_time, y = precent, fill = as.factor(covid_time))) + 
   geom_col() + theme_bw() + facet_wrap(~atopic, nrow=1) + 
   scale_fill_manual(values=c('dodgerblue4', 'darkorange1', 'green4', 'red4'),
-                    name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21')) + 
+                    name = "Born at", labels =c('Up to March19','March19 - March20','March20 - Feb21', 'From Feb21')) + ylim(c(0,100)) +
   xlab("")+  ylab("Atopic disease (%)") + 
-  theme(axis.text.x = element_text(color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) +
+  theme(axis.text.x = element_text(color = 'white'), text = element_text(size =12), strip.text = element_text(face = "bold")) + labs(title = 'The percentage of babies with atopic disease') + 
   geom_text(aes(label = round(plot_df$precent,3)), vjust = 0, size = 3.5, fontface = "bold")
 
+ggsave('Descriptive_plot.jpeg',Descriptive_plot, width =10, height =3)
 
 ```
 
+```{r}
+
+
+```
 
 ```{r}
 # exp_var1 <- df_mdl %>% select(c(SES_group, gender, mother_Atopic_diseases, father_Atopic_diseases, sibling_Atopic_diseases,
@@ -328,11 +336,11 @@ mdl2_atopic <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
              mother_Atopic_diseases + father_Atopic_diseases +
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
-# 
+
 # summary(mdl1)
 summary(mdl2)
 # summ(mdl1)
-# summ(mdl2)
+summary(mdl2_atopic)
 ```
 
 
@@ -358,12 +366,8 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
-# summary(gam2_atopic)
+summary(gam2_atopic)
 ```
-
-# פה צריך לייצר טבלאות אינםורמטיביות של כל מודל בנפרד 
-# הטבלאות צריכות להיראות טוב לטובת הצגה לעידית 
-
 
 
 
@@ -548,7 +552,7 @@ GAM_plot2_second_year
 
 ```
 
-# Second year - atopic
+## Second year - atopic
 ```{r}
 res_log2 = as.data.frame(summary(mdl2_atopic)$coefficients)
 
@@ -615,7 +619,7 @@ typical_person <- data.frame(SES_group = rep(getmode(SES_group),n),
                              number_of_children = rep(getmode(number_of_children),n),
                              nursing_setup_at_12mo = rep(getmode(nursing_setup_at_12mo),n),
                              vaccine_12mo = rep(getmode(vaccine_12mo),n),
-                             is_atopic_first_year = rep(0,n))
+                             is_atopic_first_year = rep(1,n))
 
 
 # adding DOB for each observation
@@ -624,22 +628,21 @@ typical_person <- typical_person %>% mutate(Born_at = if_else(DOB_count< g1, 'Up
 typical_person$covid_time <- as.factor(typical_person$covid_time)
 
 typical_person_sick1 = typical_person
-typical_person_sick1$is_atopic_first_year = 1
 
 # predict
 typical_person$gam_predict_first_year <- predict.gam(gam1, typical_person, type = 'response')
 typical_person$gam_predict_second_year <- predict.gam(gam2, typical_person, type = 'response')
-typical_person$gam_predict_second_year_sick1 <- predict.gam(gam2, typical_person_sick1, type = 'response')
+typical_person$gam_predict_second_year_sick1 <- predict.gam(gam2_atopic, typical_person_sick1, type = 'response')
 typical_person$reg_predict_first_year <- predict(mdl1, typical_person, type = 'response')
 typical_person$reg_predict_second_year <- predict(mdl2, typical_person, type = 'response')
-typical_person$reg_predict_second_year_sick1 <- predict(mdl2, typical_person_sick1, type = 'response')
+typical_person$reg_predict_second_year_sick1 <- predict(mdl2_atopic, typical_person_sick1, type = 'response')
 
 typical_person$gam_p_se1 <- predict.gam(gam1, typical_person, type = 'response', se.fit=TRUE)$se.fit
 typical_person$gam_p_se2 <- predict.gam(gam2, typical_person, type = 'response', se.fit=TRUE)$se.fit
-typical_person$gam_p_se2_sick1 <- predict.gam(gam2, typical_person_sick1, type = 'response', se.fit=TRUE)$se.fit
+typical_person$gam_p_se2_sick1 <- predict.gam(gam2_atopic, typical_person_sick1, type = 'response', se.fit=TRUE)$se.fit
 typical_person$reg_p_se1 <- predict(mdl1, typical_person, type = 'response', se.fit=TRUE)$se.fit
 typical_person$reg_p_se2 <- predict(mdl2, typical_person, type = 'response', se.fit=TRUE)$se.fit
-typical_person$reg_p_se2_sick1 <- predict(mdl2, typical_person_sick1, type = 'response', se.fit=TRUE)$se.fit
+typical_person$reg_p_se2_sick1 <- predict(mdl2_atopic, typical_person_sick1, type = 'response', se.fit=TRUE)$se.fit
 
 
 # Plot the predictions :
@@ -708,10 +711,10 @@ labs(title = "Atopic disease risk - GAM model", subtitle = "During the second ye
 prob_second_year_GAM
 
 
-ggsave('probabilty_Log_model_plot_first_year.jpeg',prob_first_year_log, width =10, height =6)
-ggsave('probabilty_GAM_model_plot_first_year.jpeg',prob_first_year_GAM, width =10, height =6)
-ggsave('probabilty_Log_model_plot_second_year.jpeg',prob_second_year_log, width =10, height =6)
-ggsave('probabilty_GAM_model_plot_second_year.jpeg',prob_second_year_GAM, width =10, height =6)
+# ggsave('probabilty_Log_model_plot_first_year.jpeg',prob_first_year_log, width =10, height =6)
+# ggsave('probabilty_GAM_model_plot_first_year.jpeg',prob_first_year_GAM, width =10, height =6)
+# ggsave('probabilty_Log_model_plot_second_year.jpeg',prob_second_year_log, width =10, height =6)
+# ggsave('probabilty_GAM_model_plot_second_year.jpeg',prob_second_year_GAM, width =10, height =6)
 ```
 
 
@@ -731,19 +734,21 @@ ggplot(comp) +
   
   geom_line(aes(x=DOB, y=reg_predict_second_year, col = Born_at), size = 1, linetype=2) +
   geom_line(aes(x=DOB, y=reg_predict_second_year_sick1, col = Born_at), size = 1, linetype=2) + 
-  labs(title = "Compare Atopic disease risk in the second year", subtitle = "Sick Vs. Healthy in the firsy year" , 
-       x = 'Birth date', y = 'Probability') + 
+  
+  geom_text(aes(x = max(DOB), y = max(gam_predict_second_year), label = "X"), vjust = -1, hjust = -0.5) +
+  geom_text(aes(x = max(DOB), y = max(gam_predict_second_year_sick1), label = "V"), vjust = -1, hjust = -0.5) +
+  
+  labs(title = "Compare Atopic disease risk in the second year", subtitle = "With and without atopic disease as variable in the model (Healthy baby in the first year)" , x = 'Birth date', y = 'Probability') + 
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
-
-# צריך להוסיך לגרף הסבר של איזה קו מציג כל סיטואציה - שיהיה ברור מתי אנחנו משתמשות במשתנה של החולי בשנה הראשונה כמשתנה מסביר ומתי לא. 
-# אפשר להכניס גם את הממוצע שמחושב בסוף איכשהו לגרף, להראות שבסופו של דבר אם התינוק היה חולה בשה הראשונה הסיכוי שלו לחלות גם בשנה השניה גבוה ב20% , זה אולי טריוויאלי. 
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + ylim(c(0.45,0.8))
 
 comp <- comp %>% mutate(gam_diff = gam_predict_second_year_sick1 - gam_predict_second_year, 
                         log_diff = reg_predict_second_year_sick1 - reg_predict_second_year)  
-mean(comp$gam_diff)
-mean(comp$log_diff)
+comp %>% group_by(Born_at) %>% summarise(round(100*mean(gam_diff)), round(100*mean(log_diff)))
 ```
+
+
+
 
 ### more plot of typical babies 
 ```{r}
