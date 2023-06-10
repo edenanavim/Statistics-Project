@@ -374,13 +374,13 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
 
 # stargazer(mdl2 , type="html", out="logistic 2 Y.html", out.header=TRUE)
 
-# stargazer(mdl1, mdl2 , type="html", out="logistic.html", out.header=TRUE)
+#stargazer(mdl1, mdl2 , type="html", out="logistic.html", out.header=TRUE)
 # 
 # stargazer(gam1 , type="html", out="GAM 1 Y.html", out.header=TRUE)
 # 
 # stargazer(gam1 , type="html", out="GAM 2 Y.html", out.header=TRUE)
 
-# stargazer(gam1, gam2 , type="html", out="GAM.html", out.header=TRUE)
+#stargazer(gam1, gam2 , type="html", out="GAM.html", out.header=TRUE)
 # 
 # stargazer(mdl1,gam1 , type="html", out="1 Y regressions.html", out.header=TRUE)
 # 
