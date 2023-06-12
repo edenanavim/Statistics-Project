@@ -530,10 +530,12 @@ typical_baby_plot2 <- ggplot(typical_person, aes(DOB, gam_predict_second_year)) 
   geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.975), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.975), y = NULL, fill = Born_at), alpha=0.1)+   
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
 labs(title = "Atopic disease risk", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   + 
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(text = element_text(size=20), legend.position = "none")
+
+typical_baby_plot2
 
 # ggsave('typical_baby1.jpeg',typical_baby_plot1, width =8, height =6)
-# ggsave('typical_baby2.jpeg',typical_baby_plot2, width =8, height =6)
+ggsave('poster_graph.jpeg',typical_baby_plot2, width =8, height =6)
 
 typical_baby_plot1
 typical_baby_plot2
