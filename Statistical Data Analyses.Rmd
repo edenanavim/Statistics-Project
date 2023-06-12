@@ -235,63 +235,76 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + s(DOB_count, bs='cr') ,data=df_mdl, family=binomial)
 
 
-# summary(gam1)
-# summary(gam2)
+x <- summary(gam1)
+summary(gam2)
 # summary(gam2_atopic)
 # plot.gam(gam2_atopic)
 
-
+x$s.table
 ```
 
 # Graphs
 ## first year 
 ```{r}
 res_log1 = as.data.frame(summary(mdl1)$coefficients)
-
+ci_1 = as.data.frame(confint.lm(mdl1, level = 0.9))
+res_log1$lower_ci <- ci_1$`5 %`
+res_log1$upper_ci <- ci_1$`95 %`
+  
 df_gam1 <- plot(getViz(gam1))$plots[[1]]$data$fit
 df_gam1 <- df_gam1 %>% mutate(Born_at = if_else(x< g1, 'Up to March19', ifelse(x<g2, 'March19 - March20', ifelse(x<g3,'March20 - Feb21','From Feb21'))))
 df_gam1$Born_at <- as.factor(df_gam1$Born_at)
 
 df_gam1 <- df_gam1 %>%
   mutate(y_log = if_else(x < g1, 0, ifelse(x<g2, mdl1$coefficients['covid_time2'] ,
-                                           ifelse(x<g3 ,mdl1$coefficients['covid_time3'], mdl1$coefficients['covid_time4']))),
+                                           ifelse(x<g3 ,mdl1$coefficients['covid_time3'],
+                                                  mdl1$coefficients['covid_time4']))),
 
-                  se_log = if_else(x < g1, res_log1['(Intercept)', 'Std. Error'],
-                               ifelse(x<g2, res_log1['covid_time2', 'Std. Error'],
-                                      ifelse(x<g3 , res_log1['covid_time3', 'Std. Error'],
-                                             res_log1['covid_time4', 'Std. Error']))))
+                  ci_lower = if_else(x < g1, 0,
+                               ifelse(x<g2, res_log1['covid_time2', 'lower_ci'],
+                                      ifelse(x<g3 , res_log1['covid_time3', 'lower_ci'],
+                                             res_log1['covid_time4', 'lower_ci']))),
+                  
+                  ci_upper = if_else(x < g1, 0,
+                               ifelse(x<g2, res_log1['covid_time2', 'upper_ci'],
+                                      ifelse(x<g3 , res_log1['covid_time3', 'upper_ci'],
+                                             res_log1['covid_time4', 'upper_ci']))))
 
 #set dates 
 plus = min(as.numeric(as.Date(df$DOB)))
 df_gam1 <- df_gam1 %>% mutate(Date = as.Date(x + plus,  origin = '1970-01-01'))
 
-## with Intercept:
-g1_interc = gam1$coefficients[1]
-l1_interc = mdl1$coefficients[1]
-
-df_gam1$y <- df_gam1$y + g1_interc
-df_gam1$y_log <- df_gam1$y_log + l1_interc
-
-plot1_first_year <- ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
-  geom_line(aes(col = Born_at), size = 1) +
-  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
-  
-  geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
-
-  scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
-
-# ggsave('full_first_year_mdl.jpeg',plot1_first_year, width =8, height =6)
-plot1_first_year
+# ## with Intercept:
+# g1_interc = gam1$coefficients[1]
+# l1_interc = mdl1$coefficients[1]
+# 
+# df_gam1$y <- df_gam1$y + g1_interc
+# df_gam1$y_log <- df_gam1$y_log + l1_interc
+# 
+# plot1_first_year <- ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
+#   geom_line(aes(col = Born_at), size = 1) +
+#   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+#   
+#   geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
+#   geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
+# 
+#   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
+#   labs(title = "Birth date coefficient distribution", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'coefficient')+
+#   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
+#   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
+# 
+# # ggsave('full_first_year_mdl.jpeg',plot1_first_year, width =8, height =6)
+# plot1_first_year
 
 ```
 
 ## Second year
 ```{r}
 res_log2 = as.data.frame(summary(mdl2)$coefficients)
+ci_2 = as.data.frame(confint.lm(mdl2, level = 0.9))
+res_log2$lower_ci <- ci_2$`5 %`
+res_log2$upper_ci <- ci_2$`95 %`
+
 
 df_gam2 <- plot(getViz(gam2))$plots[[1]]$data$fit
 df_gam2 <- df_gam2 %>% mutate(Born_at = if_else(x< g1, 'Up to March19', 
@@ -300,37 +313,43 @@ df_gam2$Born_at <- as.factor(df_gam2$Born_at)
 
 df_gam2 <- df_gam2 %>% mutate(y_log = if_else(x < g1, 0, 
                                 ifelse(x<g2, mdl2$coefficients['covid_time2'] , 
-                                       ifelse(x<g3 ,mdl2$coefficients['covid_time3'], mdl2$coefficients['covid_time4']))), 
-         se_log = if_else(x < g1, res_log2['(Intercept)', 'Std. Error'], 
-                               ifelse(x<g2, res_log2['covid_time2', 'Std. Error'] , 
-                                      ifelse(x<g3 , res_log2['covid_time3', 'Std. Error'], 
-                                             res_log2['covid_time4', 'Std. Error'])))) 
+                                       ifelse(x<g3 ,mdl2$coefficients['covid_time3'],
+                                              mdl2$coefficients['covid_time4']))), 
+         ci_lower = if_else(x < g1, 0, 
+                               ifelse(x<g2, res_log2['covid_time2', 'lower_ci'] , 
+                                      ifelse(x<g3 , res_log2['covid_time3', 'lower_ci'], 
+                                             res_log2['covid_time4', 'lower_ci']))),
+         
+         ci_upper = if_else(x < g1, 0, 
+                               ifelse(x<g2, res_log2['covid_time2', 'upper_ci'] , 
+                                      ifelse(x<g3 , res_log2['covid_time3', 'upper_ci'], 
+                                             res_log2['covid_time4', 'upper_ci'])))) 
 
-#set dates 
+#set dates
 plus = min(as.numeric(as.Date(df$DOB)))
 df_gam2 <- df_gam2 %>% mutate(Date = as.Date(x + plus,  origin = '1970-01-01'))
-
-## with Intercept:
-g2_interc = gam2$coefficients[1]
-l2_interc = mdl2$coefficients[1]
-
-df_gam2$y <- df_gam2$y + g2_interc
-df_gam2$y_log <- df_gam2$y_log + l2_interc
-
-plot2_second_year <- ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
-  geom_line(aes(col = Born_at), size = 1) +
-  geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
-
-  geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
-  
-  scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
-
-# ggsave('full_second_year_mdl.jpeg',plot2_second_year, width =8, height =6)
-plot2_second_year
+# 
+# ## with Intercept:
+# g2_interc = gam2$coefficients[1]
+# l2_interc = mdl2$coefficients[1]
+# 
+# df_gam2$y <- df_gam2$y + g2_interc
+# df_gam2$y_log <- df_gam2$y_log + l2_interc
+# 
+# plot2_second_year <- ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
+#   geom_line(aes(col = Born_at), size = 1) +
+#   geom_ribbon(aes(ymin = y - se*qnorm(0.975), ymax = y + se*qnorm(0.975), y=NULL), alpha = 0.1) +
+# 
+#   geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
+#   geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
+#   
+#   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
+#   labs(title = "Birth date coefficient distribution", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'coefficient')+
+#   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
+#   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
+# 
+# # ggsave('full_second_year_mdl.jpeg',plot2_second_year, width =8, height =6)
+# plot2_second_year
 ```
 ## Only Log model 
 
@@ -339,32 +358,32 @@ plot2_second_year
 
 # אולי כדאי לשנות את הויזואליזציה כדי שיהיה יותר ברור מה אנחנו רואים במודל של הרגרסיה הלוגיסטית 
 log_plot1_first_year <- ggplot(df_gam1, aes(Date,y, fill = Born_at)) + 
-  geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
+  geom_line(aes(Date, y_log, col = Born_at), size = 1) + 
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, y=NULL), alpha = 0.1)+
 
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution - Logistic model", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
+  labs(title = "Birth date group coefficient - Logistic model", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'Coefficient')+
+  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2, size=1) + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 
 log_plot1_first_year
 
 # Log plot second year 
 
-Log_plot2_second_year <- ggplot(df_gam2, aes(Date,y, fill = Born_at)) + 
+Log_plot2_second_year <- ggplot(df_gam2, aes(Date, y, fill = Born_at)) + 
 
-  geom_line(aes(Date, y_log, col = Born_at), size = 1, linetype=2) + 
-  geom_ribbon(aes(ymin = y_log - se_log*qnorm(0.975), ymax = y_log + se_log*qnorm(0.975), y=NULL), alpha = 0.1)+
+  geom_line(aes(Date, y_log, col = Born_at), size = 1) + 
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, y=NULL), alpha = 0.1)+
   
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution - Logistic model", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'coefficient')+
-  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
+  labs(title = "Birth date group coefficient - Logistic model", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'Coefficient')+
+  geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2, size=1)  + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 
 Log_plot2_second_year
 
-# ggsave('Logistic_model_first_year.jpeg',log_plot1_first_year, width =8, height =6)
-# ggsave('Logistic_model_second_year.jpeg',Log_plot2_second_year, width =8, height =6)
+ggsave('Logistic_model_first_year.jpeg',log_plot1_first_year, width =8, height =6)
+ggsave('Logistic_model_second_year.jpeg',Log_plot2_second_year, width =8, height =6)
 
 ```
 
