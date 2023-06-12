@@ -187,10 +187,10 @@ covid_time_table <- function(kpi){
 
 ## Logistic regression
 ```{r}
-n1  = n_df[[1,'n']]
-n2  = n_df[[2,'n']]
-n3  = n_df[[3,'n']]
-n4  = n_df[[4,'n']]
+# n1  = n_df[[1,'n']]
+# n2  = n_df[[2,'n']]
+# n3  = n_df[[3,'n']]
+# n4  = n_df[[4,'n']]
 
 mdl1 <- glm(is_atopic_first_year ~ SES_group + gender + type_of_pregnancy +
                mother_Atopic_diseases + father_Atopic_diseases +
@@ -206,9 +206,11 @@ mdl2_atopic <- glm(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
              mother_year_birth + mother_education + number_of_children + 
              type_of_pregnancy  + vaccine_12mo  + nursing_setup_at_12mo + covid_time, data=df_mdl, family='binomial')
 
-# summary(mdl1)
+summary(mdl1)
 # summary(mdl2)
 # summary(mdl2_atopic)
+
+confint(mdl1, level=0.9)
 ```
 
 
@@ -237,6 +239,8 @@ gam2_atopic <- gam(is_atopic_second_year ~ is_atopic_first_year + SES_group + ge
 # summary(gam2)
 # summary(gam2_atopic)
 # plot.gam(gam2_atopic)
+
+
 ```
 
 # Graphs
@@ -589,7 +593,7 @@ comp <- comp %>% mutate(gam_diff = gam_predict_second_year_sick1 - gam_predict_s
                         log_diff = reg_predict_second_year_sick1 - reg_predict_second_year)  
 comp %>% group_by(Born_at) %>% summarise(round(100*mean(gam_diff)), round(100*mean(log_diff)))
 
-ggsave('com_plot_of_gam2.jpeg',com_plot, width =10, height =6)
+# ggsave('com_plot_of_gam2.jpeg',com_plot, width =10, height =6)
 
 ```
 
