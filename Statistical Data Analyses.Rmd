@@ -33,10 +33,10 @@ options(scipen=5, digits = 5)
 ```{r, message=F, warning=F, error=F}
 
 # Reading the file:
-#dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-# dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-# dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
-dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_10.5.23.xlsx"
+#dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+ dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+# dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+#dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
 
 df_raw <- read_excel(dir, sheet = 1)
 df <- df_raw %>% mutate(DOB = as.Date(DOB)) # Copy rew data to new dataframe 
