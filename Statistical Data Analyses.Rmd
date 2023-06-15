@@ -28,6 +28,7 @@ library(stargazer)
 library(cowplot)
 
 options(scipen=5, digits = 5)
+Sys.setlocale("LC_ALL", "English")
 ```
 
 # Prepare the data to analysis 
@@ -35,9 +36,9 @@ options(scipen=5, digits = 5)
 
 # Reading the file:
 #dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
- # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+ dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
 # dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
-dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+#dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
 
 df_raw <- read_excel(dir, sheet = 1)
 df <- df_raw %>% mutate(DOB = as.Date(DOB)) # Copy rew data to new dataframe 
@@ -188,7 +189,7 @@ Descriptive_plot <-  ggplot(plot_df, aes(covid_time, y = round(100*Ratio), fill 
                       labs(title = 'The percentage of babies with atopic disease') + 
                       geom_text(aes(label = round(100*plot_df$Ratio)), vjust = 0, size = 3.5, fontface = "bold")
 
-ggsave('Descriptive_plot.jpeg',Descriptive_plot, width =10, height =3)
+#ggsave('Descriptive_plot.jpeg',Descriptive_plot, width =10, height =3)
 Descriptive_plot
 n_df
 ```
@@ -331,8 +332,8 @@ Log_plot2_second_year <- ggplot(df_plot_2Y, aes(Date, y, fill = Birth_date)) +
 
 Log_plot2_second_year
 
-ggsave('First year - Logistic standart model.jpeg',log_plot1_first_year, width =8, height =6)
-ggsave('Second year - Logistic standart model.jpeg',Log_plot2_second_year, width =8, height =6)
+#ggsave('First year - Logistic standart model.jpeg',log_plot1_first_year, width =8, height =6)
+#ggsave('Second year - Logistic standart model.jpeg',Log_plot2_second_year, width =8, height =6)
 ```
 
 
@@ -362,8 +363,8 @@ GAM_plot2_second_year <- ggplot(df_plot_2Y, aes(Date,y, fill = Birth_date)) +
 
 GAM_plot2_second_year
 
-ggsave('First year - Logistic GAMs model.jpeg',GAM_plot1_first_year, width =8, height =6)
-ggsave('Second year - Logistic GAMs model.jpeg',GAM_plot2_second_year, width =8, height =6)
+#ggsave('First year - Logistic GAMs model.jpeg',GAM_plot1_first_year, width =8, height =6)
+#ggsave('Second year - Logistic GAMs model.jpeg',GAM_plot2_second_year, width =8, height =6)
 ```
 
 
@@ -432,10 +433,10 @@ typical_baby_plot2 <- ggplot(typical_baby, aes(DOB, gam_predict_second_year)) +
   geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.95), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.95), y = NULL, fill = Birth_date), alpha=0.1)+
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
 labs(title = "Atopic disease risk", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   +
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y")# + theme(text = element_text(size=12), legend.position = "none")
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(text = element_text(size=20), legend.position = "none")
 
-ggsave('First year - Typical baby.jpeg',typical_baby_plot1, width =8, height =6)
-ggsave('Second year - Typical baby.jpeg',typical_baby_plot2, width =8, height =6)
+#ggsave('First year - Typical baby.jpeg',typical_baby_plot1, width =8, height =6)
+#ggsave('Second year - Typical baby.jpeg',typical_baby_plot2, width =8, height =6)
 
 typical_baby_plot1
 typical_baby_plot2
@@ -480,8 +481,8 @@ labs(title = "Atopic disease risk - Logistic GAMs model", subtitle = "During the
 prob_second_year_GAM
 
 
-ggsave('First year probability - Logistic standart model.jpeg',prob_first_year_log, width =8, height =6)
-ggsave('First year probability - Logistic GAMs model.jpeg',prob_first_year_GAM, width =8, height =6)
-ggsave('Second year probability - Logistic standart model.jpeg',prob_second_year_log, width =8, height =6)
-ggsave('Second year probability - Logistic GAMs model.jpeg',prob_second_year_GAM, width =8, height =6)
+#ggsave('First year probability - Logistic standart model.jpeg',prob_first_year_log, width =8, height =6)
+#ggsave('First year probability - Logistic GAMs model.jpeg',prob_first_year_GAM, width =8, height =6)
+#ggsave('Second year probability - Logistic standart model.jpeg',prob_second_year_log, width =8, height =6)
+#ggsave('Second year probability - Logistic GAMs model.jpeg',prob_second_year_GAM, width =8, height =6)
 ```
