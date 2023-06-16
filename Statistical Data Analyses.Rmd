@@ -27,18 +27,21 @@ library(mgcViz)
 library(stargazer)
 library(cowplot)
 
+# install.packages('ggpubr')
+library(ggpubr)
+
+
 options(scipen=5, digits = 5)
-Sys.setlocale("LC_ALL", "English")
+# Sys.setlocale("LC_ALL", "English")
 ```
 
 # Prepare the data to analysis 
 ```{r, message=F, warning=F, error=F}
 
-# Reading the file:
+# create a variable calld 'dir' which contained excel file link :
 #dir <- "C:/Users/Merav/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
- dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
-# dir <- "C:/Users/Shahar/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
-#dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+ # dir <- "C:/Users/edena/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
+dir <- "C:/Users/shahars/OneDrive - Playtika Ltd/Documents/GitHub/Statistics-Project/atopic_comorbidities_first_second_year_15.6.23.xlsx"
 
 df_raw <- read_excel(dir, sheet = 1)
 df <- df_raw %>% mutate(DOB = as.Date(DOB)) # Copy rew data to new dataframe 
@@ -332,8 +335,8 @@ Log_plot2_second_year <- ggplot(df_plot_2Y, aes(Date, y, fill = Birth_date)) +
 
 Log_plot2_second_year
 
-#ggsave('First year - Logistic standart model.jpeg',log_plot1_first_year, width =8, height =6)
-#ggsave('Second year - Logistic standart model.jpeg',Log_plot2_second_year, width =8, height =6)
+ggsave('First year - Logistic standart model.jpeg',log_plot1_first_year, width =8, height =6)
+ggsave('Second year - Logistic standart model.jpeg',Log_plot2_second_year, width =8, height =6)
 ```
 
 
@@ -345,7 +348,7 @@ GAM_plot1_first_year <- ggplot(df_plot_1Y, aes(Date,y, fill = Birth_date)) +
   geom_line(aes(col = Birth_date), size = 1) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.95), ymax = y + se*qnorm(0.95), y=NULL), alpha = 0.1) +
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution - Logistic GAMs model", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'coefficient')+
+  labs(title = "Birth date coefficient distribution - Logistic Generalized Additive Model", subtitle ="During the first year of a baby's life", x = 'Birth date', y = 'coefficient')+
   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2) + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 
@@ -357,14 +360,14 @@ GAM_plot2_second_year <- ggplot(df_plot_2Y, aes(Date,y, fill = Birth_date)) +
   geom_ribbon(aes(ymin = y - se*qnorm(0.95), ymax = y + se*qnorm(0.95), y=NULL), alpha = 0.1) +
 
   scale_color_manual(values=viridis(5)) + scale_fill_manual(values=viridis(5)) + theme_bw() +
-  labs(title = "Birth date coefficient distribution - Logistic GAMs model", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'coefficient')+
+  labs(title = "Birth date coefficient distribution - Logistic Generalized Additive Model", subtitle ="During the second year of a baby's life", x = 'Birth date', y = 'coefficient')+
   geom_hline(yintercept = 0, linetype='dashed', alpha = 0.2)  + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 
 GAM_plot2_second_year
 
-#ggsave('First year - Logistic GAMs model.jpeg',GAM_plot1_first_year, width =8, height =6)
-#ggsave('Second year - Logistic GAMs model.jpeg',GAM_plot2_second_year, width =8, height =6)
+ggsave('First year - Logistic GAM.jpeg',GAM_plot1_first_year, width =8, height =6)
+ggsave('Second year - Logistic GAM.jpeg',GAM_plot2_second_year, width =8, height =6)
 ```
 
 
@@ -416,7 +419,7 @@ typical_baby$reg_p_se2 <- predict(mdl2, typical_baby, type = 'response', se.fit=
 
 # Plot the predictions :
 typical_baby_plot1 <- ggplot(typical_baby, aes(DOB, gam_predict_first_year)) +  
-                        geom_line(aes(col = Birth_date, linetype='Logistic GAMs mdl'), size = 1) +
+                        geom_line(aes(col = Birth_date, linetype='Logistic GAM'), size = 1) +
                         geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.95), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.95), y = NULL, fill = Birth_date), alpha=0.1)+ 
                         geom_line(aes(DOB, reg_predict_first_year, col = Birth_date, linetype = 'Logistic standart mdl'), size = 1) +
                         geom_ribbon(aes(ymin = reg_predict_first_year - reg_p_se1*qnorm(0.95), ymax = reg_predict_first_year + reg_p_se1*qnorm(0.95), y = NULL, fill = Birth_date), alpha=0.1)+   
@@ -426,17 +429,17 @@ typical_baby_plot1 <- ggplot(typical_baby, aes(DOB, gam_predict_first_year)) +
 
 
 typical_baby_plot2 <- ggplot(typical_baby, aes(DOB, gam_predict_second_year)) +
-  geom_line(aes(DOB, gam_predict_second_year, col = Birth_date, linetype='Logistic GAMs mdl'), size = 1) +
+  geom_line(aes(DOB, gam_predict_second_year, col = Birth_date, linetype='Logistic GAM'), size = 1) +
   geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.95), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.95), y=NULL, fill=Birth_date), alpha=0.1)+
   
   geom_line(aes(DOB, reg_predict_second_year, col = Birth_date, linetype = 'Logistic standart mdl'), size = 1) +
   geom_ribbon(aes(ymin = reg_predict_second_year - reg_p_se2*qnorm(0.95), ymax = reg_predict_second_year + reg_p_se2*qnorm(0.95), y = NULL, fill = Birth_date), alpha=0.1)+
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
 labs(title = "Atopic disease risk", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   +
-  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(text = element_text(size=20), legend.position = "none")
+  scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(text = element_text(size=20), legend.position = "none", panel.background = element_rect(fill = "transparent", colour = NA))
 
-#ggsave('First year - Typical baby.jpeg',typical_baby_plot1, width =8, height =6)
-#ggsave('Second year - Typical baby.jpeg',typical_baby_plot2, width =8, height =6)
+ggsave('First year - Typical baby.jpeg',typical_baby_plot1, width =8, height =6)
+ggsave('Second year - Typical baby.png',typical_baby_plot2, width =10, height =6,  bg='transparent')
 
 typical_baby_plot1
 typical_baby_plot2
@@ -460,7 +463,7 @@ prob_first_year_GAM <- ggplot(typical_baby, aes(DOB, gam_predict_first_year)) +
                         geom_line(aes(col = Birth_date), size = 1) +
                         geom_ribbon(aes(ymin = gam_predict_first_year - gam_p_se1*qnorm(0.95), ymax = gam_predict_first_year + gam_p_se1*qnorm(0.95), y = NULL, fill = Birth_date), alpha=0.1)+ 
                         scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-                        labs(title = "Atopic disease risk - Logistic GAMs model", subtitle = "During the first year of a baby's life" , x = 'Birth date', y = 'Probability')  + 
+                        labs(title = "Atopic disease risk - Logistic Generalized Additive Model", subtitle = "During the first year of a baby's life" , x = 'Birth date', y = 'Probability')  + 
                         scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 prob_first_year_GAM
 
@@ -476,13 +479,13 @@ prob_second_year_GAM <- ggplot(typical_baby, aes(DOB, gam_predict_second_year)) 
   geom_line(aes(col = Birth_date), size = 1) +
   geom_ribbon(aes(ymin = gam_predict_second_year - gam_p_se2*qnorm(0.95), ymax = gam_predict_second_year + gam_p_se2*qnorm(0.95), y=NULL, fill=Birth_date), alpha=0.1)+ 
   scale_color_manual(values=viridis(4)) + scale_fill_manual(values=viridis(4)) + theme_bw() +
-labs(title = "Atopic disease risk - Logistic GAMs model", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   + 
+labs(title = "Atopic disease risk - Logistic Generalized Additive Model", subtitle = "During the second year of a baby's life" , x = 'Birth date', y = 'Probability')   + 
   scale_x_date(date_breaks = "4 months", date_labels = "%b\n%y") + theme(legend.position = "none")
 prob_second_year_GAM
 
 
-#ggsave('First year probability - Logistic standart model.jpeg',prob_first_year_log, width =8, height =6)
-#ggsave('First year probability - Logistic GAMs model.jpeg',prob_first_year_GAM, width =8, height =6)
-#ggsave('Second year probability - Logistic standart model.jpeg',prob_second_year_log, width =8, height =6)
-#ggsave('Second year probability - Logistic GAMs model.jpeg',prob_second_year_GAM, width =8, height =6)
+ggsave('First year probability - Logistic standart model.jpeg',prob_first_year_log, width =8, height =6)
+ggsave('First year probability - Logistic GAM.jpeg',prob_first_year_GAM, width =8, height =6)
+ggsave('Second year probability - Logistic standart model.jpeg',prob_second_year_log, width =8, height =6)
+ggsave('Second year probability - Logistic GAM.jpeg',prob_second_year_GAM, width =8, height =6)
 ```
